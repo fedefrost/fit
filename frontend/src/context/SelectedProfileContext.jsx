@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { listProfiles } from '../api/profiles'
 
 const STORAGE_KEY = 'fit.selectedProfileId'
@@ -31,8 +31,12 @@ export function SelectedProfileProvider({ children }) {
   const [selectedId, setSelectedId] = useState(readStoredId)
   const [selected, setSelected] = useState(null) // { profile, index }
   const [status, setStatus] = useState(selectedId ? 'loading' : 'idle') // idle | loading | ready | missing | error
+  // Selección vigente, para descartar respuestas que llegan después de un clear() o select()
+  // (p. ej. al recargar en /profiles: la carga del perfil guardado termina después de limpiarlo).
+  const currentId = useRef(selectedId)
 
   const select = useCallback((profile, index) => {
+    currentId.current = profile.id
     writeStoredId(profile.id)
     setSelectedId(profile.id)
     setSelected({ profile, index })
@@ -40,6 +44,7 @@ export function SelectedProfileProvider({ children }) {
   }, [])
 
   const clear = useCallback(() => {
+    currentId.current = null
     writeStoredId(null)
     setSelectedId(null)
     setSelected(null)
@@ -51,6 +56,7 @@ export function SelectedProfileProvider({ children }) {
     setStatus('loading')
     try {
       const profiles = await listProfiles()
+      if (currentId.current !== selectedId) return
       const index = profiles.findIndex((item) => item.id === selectedId)
       if (index === -1) {
         writeStoredId(null)
@@ -61,7 +67,7 @@ export function SelectedProfileProvider({ children }) {
       setSelected({ profile: profiles[index], index })
       setStatus('ready')
     } catch {
-      setStatus('error')
+      if (currentId.current === selectedId) setStatus('error')
     }
   }, [selectedId])
 

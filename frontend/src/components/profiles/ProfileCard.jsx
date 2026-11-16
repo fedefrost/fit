@@ -61,7 +61,7 @@ export default function ProfileCard({ profile, label, onSelect, onEdit, onDelete
       <CardHeader
         avatar={<ProfileAvatar sex={profile.sex} />}
         title={label}
-        subheader={t(`sex.${profile.sex}`)}
+        subheader={`${t(`sex.${profile.sex}`)} · ${t(`activity.${profile.activityLevel ?? 'sedentary'}.short`)}`}
         slotProps={{ title: { variant: 'subtitle1', component: 'h2' }, subheader: { variant: 'body2' } }}
         action={
           <Stack direction="row">

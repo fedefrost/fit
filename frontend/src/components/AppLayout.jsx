@@ -10,6 +10,7 @@ import Toolbar from '@mui/material/Toolbar'
 import GroupIcon from '@mui/icons-material/Group'
 import { useSelectedProfile } from '../context/SelectedProfileContext'
 import { profileLabel, sexIcon } from '../lib/profile'
+import DietSummaryBar from './diet/DietSummaryBar'
 import LanguageMenu from './LanguageMenu'
 import Logo from './Logo'
 
@@ -87,6 +88,7 @@ export default function AppLayout() {
             </Button>
           </Toolbar>
         </Container>
+        <DietSummaryBar />
       </AppBar>
 
       <Container component="main" maxWidth="lg" sx={{ py: { xs: 3, md: 5 } }}>

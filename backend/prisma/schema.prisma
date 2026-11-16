@@ -13,15 +13,26 @@ enum Sex {
   other
 }
 
+// Nivel de actividad física; multiplica el gasto calórico basal (ver lib/nutrition.ts).
+enum ActivityLevel {
+  sedentary // poco o nada de ejercicio
+  light // 1-3 días por semana
+  moderate // 3-5 días por semana
+  active // 6-7 días por semana
+  very_active // entrenamiento intenso o trabajo físico
+}
+
 model Profile {
-  id        Int           @id @default(autoincrement())
-  weight    Float // kg
-  height    Float // cm
-  age       Int // años
-  sex       Sex
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-  foods     ProfileFood[]
+  id            Int           @id @default(autoincrement())
+  weight        Float // kg
+  height        Float // cm
+  age           Int // años
+  sex           Sex
+  activityLevel ActivityLevel @default(sedentary)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  foods         ProfileFood[]
+  dietPlan      DietPlan?
 
   @@map("profiles")
 }
@@ -49,12 +60,13 @@ enum FoodCategory {
 // Catálogo de ingredientes. Es de solo lectura para la app: se carga con migraciones
 // (ver prisma/migrations/*_food_catalog) y no tiene endpoints para editarlo.
 model Food {
-  id       Int           @id @default(autoincrement())
-  slug     String        @unique // identificador estable, en inglés, para futuras migraciones del catálogo
+  id       Int                @id @default(autoincrement())
+  slug     String             @unique // identificador estable, en inglés, para futuras migraciones del catálogo
   category FoodCategory
   nameEs   String
   nameEn   String
   profiles ProfileFood[]
+  recipes  RecipeIngredient[]
 
   @@map("foods")
 }
@@ -76,4 +88,91 @@ model ProfileFood {
   @@id([profileId, foodId])
   @@index([foodId])
   @@map("profile_foods")
+}
+
+enum MealType {
+  breakfast
+  lunch
+  dinner
+  snack
+}
+
+enum RecipeUnit {
+  g
+  ml
+  unit
+  tbsp // cucharada
+  tsp // cucharadita
+  slice
+  pinch
+}
+
+// Catálogo de recetas. Igual que Food: solo lectura, se carga con migraciones
+// (ver prisma/migrations/*_recipe_catalog).
+model Recipe {
+  id          Int                @id @default(autoincrement())
+  slug        String             @unique
+  nameEs      String
+  nameEn      String
+  summaryEs   String // resumen de la preparación
+  summaryEn   String
+  mealTypes   MealType[] // en qué comidas puede usarse
+  calories    Int // kcal por porción
+  waterMl     Int                @default(0) // hidratación que aporta por porción
+  ingredients RecipeIngredient[]
+  dietMeals   DietMeal[]
+
+  @@map("recipes")
+}
+
+model RecipeIngredient {
+  recipeId Int
+  foodId   Int
+  quantity Float // por porción, en `unit`
+  unit     RecipeUnit
+  position Int // orden en la lista
+  recipe   Recipe     @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  food     Food       @relation(fields: [foodId], references: [id], onDelete: Restrict)
+
+  @@id([recipeId, foodId])
+  @@index([foodId])
+  @@map("recipe_ingredients")
+}
+
+// Dieta de la semana en curso. Un perfil tiene como máximo una: al generar la de otra
+// semana se reemplaza (no se guarda historial).
+model DietPlan {
+  id        Int        @id @default(autoincrement())
+  profileId Int        @unique
+  weekStart DateTime   @db.Date // lunes de la semana
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  profile   Profile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  meals     DietMeal[]
+
+  @@map("diet_plans")
+}
+
+enum MealSlot {
+  breakfast
+  lunch
+  dinner
+  extra // agregada por el usuario (colaciones, aperitivos...)
+}
+
+model DietMeal {
+  id        Int      @id @default(autoincrement())
+  planId    Int
+  date      DateTime @db.Date
+  slot      MealSlot
+  recipeId  Int
+  servings  Float // porciones; las calorías y el agua se escalan con esto
+  consumed  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  plan      DietPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  recipe    Recipe   @relation(fields: [recipeId], references: [id], onDelete: Restrict)
+
+  @@index([planId, date])
+  @@index([recipeId])
+  @@map("diet_meals")
 }

@@ -4,7 +4,7 @@ const allowedOrigin = process.env.CORS_ORIGIN ?? "http://localhost:5173";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": allowedOrigin,
-  "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
+  "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
   "Access-Control-Max-Age": "86400",
 };

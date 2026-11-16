@@ -15,9 +15,18 @@ import TextField from '@mui/material/TextField'
 import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import { apiErrorMessage } from '../../api/profiles'
-import { PROFILE_FIELDS, SEX_OPTIONS, toInputValue, validateProfile } from '../../lib/profile'
+import MenuItem from '@mui/material/MenuItem'
+import Typography from '@mui/material/Typography'
+import {
+  ACTIVITY_LEVELS,
+  DEFAULT_ACTIVITY_LEVEL,
+  PROFILE_FIELDS,
+  SEX_OPTIONS,
+  toInputValue,
+  validateProfile,
+} from '../../lib/profile'
 
-const EMPTY = { weight: '', height: '', age: '', sex: '' }
+const EMPTY = { weight: '', height: '', age: '', sex: '', activityLevel: DEFAULT_ACTIVITY_LEVEL }
 
 function toFormValues(profile) {
   if (!profile) return EMPTY
@@ -26,6 +35,7 @@ function toFormValues(profile) {
     height: toInputValue(profile.height),
     age: String(profile.age),
     sex: profile.sex,
+    activityLevel: profile.activityLevel ?? DEFAULT_ACTIVITY_LEVEL,
   }
 }
 
@@ -140,6 +150,32 @@ export default function ProfileFormDialog({ open, profile, title, onClose, onSub
             </ToggleButtonGroup>
             <FormHelperText>{errors.sex ? t(errors.sex) : ' '}</FormHelperText>
           </FormControl>
+
+          <TextField
+            select
+            label={t('activity.label')}
+            value={values.activityLevel}
+            onChange={(event) => setField('activityLevel', event.target.value)}
+            error={Boolean(errors.activityLevel)}
+            helperText={errors.activityLevel ? t(errors.activityLevel) : t('activity.helper')}
+            required
+            fullWidth
+            slotProps={{
+              select: {
+                renderValue: (level) => t(`activity.${level}.title`),
+                MenuProps: { slotProps: { paper: { sx: { borderRadius: 3 } } } },
+              },
+            }}
+          >
+            {ACTIVITY_LEVELS.map((level) => (
+              <MenuItem key={level} value={level} sx={{ display: 'block', py: 1 }}>
+                <Typography sx={{ fontWeight: 700 }}>{t(`activity.${level}.title`)}</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {t(`activity.${level}.description`)}
+                </Typography>
+              </MenuItem>
+            ))}
+          </TextField>
         </Stack>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2.5 }}>

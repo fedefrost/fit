@@ -3,11 +3,16 @@ export const MAX_PROFILES = 5;
 export const SEX_VALUES = ["male", "female", "other"] as const;
 export type SexValue = (typeof SEX_VALUES)[number];
 
+export const ACTIVITY_LEVELS = ["sedentary", "light", "moderate", "active", "very_active"] as const;
+export type ActivityLevelValue = (typeof ACTIVITY_LEVELS)[number];
+
 export type ProfileInput = {
   weight: number;
   height: number;
   age: number;
   sex: SexValue;
+  // Opcional por compatibilidad: si falta, al crear se usa "sedentary" y al editar no se cambia.
+  activityLevel?: ActivityLevelValue;
 };
 
 type ParseResult =
@@ -21,7 +26,7 @@ export function parseProfileInput(body: unknown): ParseResult {
     return { ok: false, errors: { body: "El cuerpo debe ser un objeto JSON" } };
   }
 
-  const { weight, height, age, sex } = body as Record<string, unknown>;
+  const { weight, height, age, sex, activityLevel } = body as Record<string, unknown>;
 
   if (typeof weight !== "number" || !Number.isFinite(weight) || weight <= 0 || weight > 500) {
     errors.weight = "weight debe ser un número entre 0 y 500 (kg)";
@@ -35,6 +40,12 @@ export function parseProfileInput(body: unknown): ParseResult {
   if (typeof sex !== "string" || !SEX_VALUES.includes(sex as SexValue)) {
     errors.sex = `sex debe ser uno de: ${SEX_VALUES.join(", ")}`;
   }
+  if (
+    activityLevel !== undefined &&
+    (typeof activityLevel !== "string" || !ACTIVITY_LEVELS.includes(activityLevel as ActivityLevelValue))
+  ) {
+    errors.activityLevel = `activityLevel debe ser uno de: ${ACTIVITY_LEVELS.join(", ")}`;
+  }
 
   if (Object.keys(errors).length > 0) {
     return { ok: false, errors };
@@ -47,6 +58,7 @@ export function parseProfileInput(body: unknown): ParseResult {
       height: height as number,
       age: age as number,
       sex: sex as SexValue,
+      activityLevel: activityLevel as ActivityLevelValue | undefined,
     },
   };
 }

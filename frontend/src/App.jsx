@@ -1,8 +1,10 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import AppLayout from './components/AppLayout'
 import RequireProfile from './components/RequireProfile'
+import { DietProvider } from './context/DietContext'
 import { SelectedProfileProvider, useSelectedProfile } from './context/SelectedProfileContext'
 import { SECTIONS } from './lib/sections'
+import DietPage from './pages/DietPage'
 import MenuPage from './pages/MenuPage'
 import ProfilesPage from './pages/ProfilesPage'
 import SectionPage from './pages/SectionPage'
@@ -13,23 +15,28 @@ function HomeRedirect() {
   return <Navigate to={selectedId ? '/menu' : '/profiles'} replace />
 }
 
+// Secciones con página propia; el resto muestra "Próximamente".
+const SECTION_PAGES = { diet: <DietPage /> }
+
 export default function App() {
   return (
     <SelectedProfileProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route element={<AppLayout />}>
-            <Route path="/profiles" element={<ProfilesPage />} />
-            <Route element={<RequireProfile />}>
-              <Route path="/menu" element={<MenuPage />} />
-              {SECTIONS.map(({ key, path }) => (
-                <Route key={key} path={path} element={<SectionPage sectionKey={key} />} />
-              ))}
+      <DietProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route element={<AppLayout />}>
+              <Route path="/profiles" element={<ProfilesPage />} />
+              <Route element={<RequireProfile />}>
+                <Route path="/menu" element={<MenuPage />} />
+                {SECTIONS.map(({ key, path }) => (
+                  <Route key={key} path={path} element={SECTION_PAGES[key] ?? <SectionPage sectionKey={key} />} />
+                ))}
+              </Route>
             </Route>
-          </Route>
-          <Route path="*" element={<HomeRedirect />} />
-        </Routes>
-      </BrowserRouter>
+            <Route path="*" element={<HomeRedirect />} />
+          </Routes>
+        </BrowserRouter>
+      </DietProvider>
     </SelectedProfileProvider>
   )
 }

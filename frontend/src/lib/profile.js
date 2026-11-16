@@ -12,6 +12,10 @@ export const SEX_OPTIONS = [
   { value: 'other', Icon: PersonIcon },
 ]
 
+// Mismo orden que el enum ActivityLevel del backend. Textos: t(`activity.${level}.title`).
+export const ACTIVITY_LEVELS = ['sedentary', 'light', 'moderate', 'active', 'very_active']
+export const DEFAULT_ACTIVITY_LEVEL = 'sedentary'
+
 export function sexIcon(value) {
   return (SEX_OPTIONS.find((option) => option.value === value) ?? SEX_OPTIONS[2]).Icon
 }
@@ -42,7 +46,7 @@ function toNumber(raw) {
   return text === '' ? NaN : Number(text)
 }
 
-export const PROFILE_FIELDS = ['weight', 'height', 'age', 'sex']
+export const PROFILE_FIELDS = ['weight', 'height', 'age', 'sex', 'activityLevel']
 
 /**
  * Misma validación que el backend (backend/lib/validation.ts).
@@ -58,8 +62,9 @@ export function validateProfile(values) {
   if (!Number.isFinite(height) || height <= 0 || height > 300) errors.height = 'validation.height'
   if (!Number.isInteger(age) || age < 0 || age > 120) errors.age = 'validation.age'
   if (!SEX_OPTIONS.some((option) => option.value === values.sex)) errors.sex = 'validation.sex'
+  if (!ACTIVITY_LEVELS.includes(values.activityLevel)) errors.activityLevel = 'validation.activityLevel'
 
-  return { errors, data: { weight, height, age, sex: values.sex } }
+  return { errors, data: { weight, height, age, sex: values.sex, activityLevel: values.activityLevel } }
 }
 
 /** IMC redondeado a 1 decimal, para que la categoría coincida con el número que se muestra. */

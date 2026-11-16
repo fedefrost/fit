@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Sex {
+  male
+  female
+  other
+}
+
+model Profile {
+  id        Int           @id @default(autoincrement())
+  weight    Float // kg
+  height    Float // cm
+  age       Int // años
+  sex       Sex
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  foods     ProfileFood[]
+
+  @@map("profiles")
+}
+
+enum FoodCategory {
+  vegetables
+  fruits
+  legumes
+  plant_proteins
+  grains
+  meat
+  poultry
+  eggs
+  fish_seafood
+  dairy
+  dairy_alternatives
+  nuts_seeds
+  herbs_spices
+  oils_fats
+  sweets
+  condiments
+  beverages
+}
+
+// Catálogo de ingredientes. Es de solo lectura para la app: se carga con migraciones
+// (ver prisma/migrations/*_food_catalog) y no tiene endpoints para editarlo.
+model Food {
+  id       Int           @id @default(autoincrement())
+  slug     String        @unique // identificador estable, en inglés, para futuras migraciones del catálogo
+  category FoodCategory
+  nameEs   String
+  nameEn   String
+  profiles ProfileFood[]
+
+  @@map("foods")
+}
+
+enum FoodPreference {
+  preferred // le gustaría que aparezca más en su dieta
+  rejected // no debe aparecer (gusto o salud)
+}
+
+// Un alimento puede estar en una sola lista por perfil (la clave primaria lo garantiza).
+model ProfileFood {
+  profileId  Int
+  foodId     Int
+  preference FoodPreference
+  createdAt  DateTime       @default(now())
+  profile    Profile        @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  food       Food           @relation(fields: [foodId], references: [id], onDelete: Restrict)
+
+  @@id([profileId, foodId])
+  @@index([foodId])
+  @@map("profile_foods")
+}

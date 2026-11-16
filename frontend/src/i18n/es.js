@@ -235,6 +235,8 @@ const es = {
     ingredients: 'Con ingredientes',
     ingredientsPlaceholder: 'Filtrar por ingrediente…',
     hideRejected: 'Ocultar recetas con alimentos rechazados',
+    onlyPreferred: 'Mostrar solo recetas con alimentos preferidos',
+    onlyPreferredNone: 'Mostrar solo recetas con alimentos preferidos (este perfil no tiene preferidos)',
     noResults: 'No hay recetas que coincidan con los filtros.',
     count_one: '{{count}} receta',
     count_other: '{{count}} recetas',

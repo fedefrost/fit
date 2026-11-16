@@ -56,6 +56,7 @@ export default function RecipePickerDialog({ open, mode, slot, initialMealType, 
   const [mealType, setMealType] = useState('all')
   const [ingredients, setIngredients] = useState([])
   const [hideRejected, setHideRejected] = useState(true)
+  const [onlyPreferred, setOnlyPreferred] = useState(false)
   const [selectedId, setSelectedId] = useState(null)
   const [servingsText, setServingsText] = useState('1') // lo que escribe el usuario; admite decimales
   const [saving, setSaving] = useState(false)
@@ -67,6 +68,7 @@ export default function RecipePickerDialog({ open, mode, slot, initialMealType, 
       setMealType(initialMealType ?? 'all')
       setIngredients([])
       setHideRejected(true)
+      setOnlyPreferred(false)
       setSelectedId(null)
       setServingsText(servingsToInput(initialServings, language))
       setSaving(false)
@@ -88,8 +90,11 @@ export default function RecipePickerDialog({ open, mode, slot, initialMealType, 
       .filter((recipe) => !text || normalizeText(`${recipe.nameEs} ${recipe.nameEn}`).includes(text))
       .filter((recipe) => required.every((id) => recipe.ingredients.some((ingredient) => ingredient.foodId === id)))
       .filter((recipe) => !hideRejected || !recipeContains(recipe, preferences.rejected))
+      .filter((recipe) => !onlyPreferred || recipeContains(recipe, preferences.preferred))
       .sort((a, b) => recipeName(a, language).localeCompare(recipeName(b, language), language))
-  }, [recipes, query, mealType, ingredients, hideRejected, preferences.rejected, language])
+  }, [recipes, query, mealType, ingredients, hideRejected, onlyPreferred, preferences, language])
+
+  const hasPreferred = preferences.preferred.size > 0
 
   const selected = results.find((recipe) => recipe.id === selectedId) ?? null
 
@@ -161,10 +166,28 @@ export default function RecipePickerDialog({ open, mode, slot, initialMealType, 
             <TextField {...params} label={t('picker.ingredients')} placeholder={t('picker.ingredientsPlaceholder')} />
           )}
         />
-        <FormControlLabel
-          control={<Checkbox size="small" checked={hideRejected} onChange={(event) => setHideRejected(event.target.checked)} />}
-          label={<Typography variant="body2">{t('picker.hideRejected')}</Typography>}
-        />
+        <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ columnGap: 2 }}>
+          <FormControlLabel
+            control={<Checkbox size="small" checked={hideRejected} onChange={(event) => setHideRejected(event.target.checked)} />}
+            label={<Typography variant="body2">{t('picker.hideRejected')}</Typography>}
+          />
+          <FormControlLabel
+            disabled={!hasPreferred}
+            control={
+              <Checkbox
+                size="small"
+                color="success"
+                checked={onlyPreferred && hasPreferred}
+                onChange={(event) => setOnlyPreferred(event.target.checked)}
+              />
+            }
+            label={
+              <Typography variant="body2">
+                {hasPreferred ? t('picker.onlyPreferred') : t('picker.onlyPreferredNone')}
+              </Typography>
+            }
+          />
+        </Stack>
       </Box>
 
       <DialogContent dividers sx={{ p: 0 }}>

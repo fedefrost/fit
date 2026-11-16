@@ -231,6 +231,8 @@ const en = {
     ingredients: 'With ingredients',
     ingredientsPlaceholder: 'Filter by ingredient…',
     hideRejected: 'Hide recipes with rejected foods',
+    onlyPreferred: 'Show only recipes with preferred foods',
+    onlyPreferredNone: 'Show only recipes with preferred foods (this profile has none)',
     noResults: 'No recipes match the filters.',
     count_one: '{{count}} recipe',
     count_other: '{{count}} recipes',

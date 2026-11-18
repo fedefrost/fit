@@ -65,8 +65,10 @@ export async function buildShoppingResponse(prisma: PrismaClient, profile: Profi
   const days = list?.days ?? [];
   const checked = new Set(list?.checks.map((check) => check.key) ?? []);
 
-  const plan = await prisma.dietPlan.findUnique({ where: { profileId: profile.id } });
-  const hasDiet = Boolean(plan && isoDate(plan.weekStart) === week);
+  const plan = await prisma.dietPlan.findUnique({
+    where: { profileId_weekStart: { profileId: profile.id, weekStart } },
+  });
+  const hasDiet = Boolean(plan);
 
   const ingredients = new Map<string, { key: string; foodId: number; unit: RecipeUnit; quantity: number; meals: number }>();
   if (plan && hasDiet) {

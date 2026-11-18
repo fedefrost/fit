@@ -6,6 +6,7 @@ import { WorkoutProvider } from './context/WorkoutContext'
 import { SelectedProfileProvider, useSelectedProfile } from './context/SelectedProfileContext'
 import { SECTIONS } from './lib/sections'
 import DietPage from './pages/DietPage'
+import HistoryPage from './pages/HistoryPage'
 import MenuPage from './pages/MenuPage'
 import ProfilesPage from './pages/ProfilesPage'
 import RoutinePage from './pages/RoutinePage'
@@ -18,8 +19,8 @@ function HomeRedirect() {
   return <Navigate to={selectedId ? '/menu' : '/profiles'} replace />
 }
 
-// Secciones con página propia; el resto muestra "Próximamente".
-const SECTION_PAGES = { diet: <DietPage />, routine: <RoutinePage />, shopping: <ShoppingPage /> }
+// Secciones con página propia; el resto mostraría "Próximamente".
+const SECTION_PAGES = { diet: <DietPage />, routine: <RoutinePage />, history: <HistoryPage />, shopping: <ShoppingPage /> }
 
 export default function App() {
   return (

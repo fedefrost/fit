@@ -52,6 +52,13 @@ export function parseServings(raw: unknown): number | null {
 
 // ---------- Respuesta de la API ----------
 
+/** Objetivos que se guardan en la dieta de la semana (para el historial). */
+export const targetsSnapshot = (targets: DailyTargets) => ({
+  targetCalories: targets.calories,
+  targetWaterMl: targets.waterMl,
+  baselineBurn: targets.baselineBurn,
+});
+
 type MealWithRecipe = DietMeal & { recipe: { calories: number; waterMl: number } };
 
 function toMealDto(meal: MealWithRecipe) {
@@ -73,7 +80,7 @@ function toMealDto(meal: MealWithRecipe) {
 export async function buildDietResponse(prisma: PrismaClient, profile: Profile, weekStart: Date) {
   const targets = dailyTargets(profile);
   const plan = await prisma.dietPlan.findUnique({
-    where: { profileId: profile.id },
+    where: { profileId_weekStart: { profileId: profile.id, weekStart } },
     include: {
       meals: {
         include: { recipe: { select: { calories: true, waterMl: true } } },
@@ -82,8 +89,16 @@ export async function buildDietResponse(prisma: PrismaClient, profile: Profile, 
     },
   });
 
-  if (!plan || isoDate(plan.weekStart) !== isoDate(weekStart)) {
-    return { weekStart: isoDate(weekStart), targets, plan: null };
+  if (!plan) return { weekStart: isoDate(weekStart), targets, plan: null };
+
+  // La semana que se consulta es la que el usuario está usando: sus objetivos siguen al perfil.
+  const snapshot = targetsSnapshot(targets);
+  if (
+    plan.targetCalories !== snapshot.targetCalories ||
+    plan.targetWaterMl !== snapshot.targetWaterMl ||
+    plan.baselineBurn !== snapshot.baselineBurn
+  ) {
+    await prisma.dietPlan.update({ where: { id: plan.id }, data: snapshot });
   }
 
   const days = weekDates(weekStart).map((date) => {
@@ -186,14 +201,11 @@ export async function generateDiet(prisma: PrismaClient, profile: Profile, weekS
   const dates = onlyDate ? [onlyDate] : weekDates(weekStart);
 
   await prisma.$transaction(async (tx) => {
-    const existing = await tx.dietPlan.findUnique({ where: { profileId: profile.id } });
-    if (existing && isoDate(existing.weekStart) !== isoDate(weekStart)) {
-      await tx.dietPlan.delete({ where: { id: existing.id } });
-    }
+    const snapshot = targetsSnapshot(targets);
     const plan = await tx.dietPlan.upsert({
-      where: { profileId: profile.id },
-      create: { profileId: profile.id, weekStart },
-      update: { weekStart },
+      where: { profileId_weekStart: { profileId: profile.id, weekStart } },
+      create: { profileId: profile.id, weekStart, ...snapshot },
+      update: snapshot,
     });
 
     const others = await tx.dietMeal.findMany({

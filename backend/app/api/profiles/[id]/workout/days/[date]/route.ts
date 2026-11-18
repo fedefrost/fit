@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { findProfile, parseDayInWeek, readJson, validationError } from "@/lib/route-helpers";
-import { buildWorkoutResponse, dropOtherWeeks, parseLocation } from "@/lib/workout";
+import { buildWorkoutResponse, parseLocation } from "@/lib/workout";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +24,6 @@ export async function PUT(request: Request, { params }: RouteContext) {
   if (!location) return validationError({ location: "location debe ser home o gym" });
 
   const profileId = found.profile.id;
-  await dropOtherWeeks(prisma, profileId, day.weekStart);
   await prisma.workoutDay.upsert({
     where: { profileId_date: { profileId, date: day.date } },
     create: { profileId, date: day.date, location },

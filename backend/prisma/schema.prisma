@@ -45,7 +45,7 @@ model Profile {
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
   foods         ProfileFood[]
-  dietPlan      DietPlan?
+  dietPlans     DietPlan[]
   equipment     ProfileEquipment[]
   workoutDays   WorkoutDay[]
   shoppingList  ShoppingList?
@@ -157,17 +157,22 @@ model RecipeIngredient {
   @@map("recipe_ingredients")
 }
 
-// Dieta de la semana en curso. Un perfil tiene como máximo una: al generar la de otra
-// semana se reemplaza (no se guarda historial).
+// Dieta de una semana. Se guardan todas (son el historial); la app solo edita la semana en curso.
+// Los objetivos se copian al generar y al consultar la semana, para que el historial muestre lo
+// que se recomendó entonces aunque después cambien los datos del perfil.
 model DietPlan {
-  id        Int        @id @default(autoincrement())
-  profileId Int        @unique
-  weekStart DateTime   @db.Date // lunes de la semana
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  profile   Profile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  meals     DietMeal[]
+  id             Int        @id @default(autoincrement())
+  profileId      Int
+  weekStart      DateTime   @db.Date // lunes de la semana
+  targetCalories Int? // kcal diarias recomendadas
+  targetWaterMl  Int? // agua diaria recomendada
+  baselineBurn   Int? // gasto de un día sin ejercicio (rutina diaria)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  profile        Profile    @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  meals          DietMeal[]
 
+  @@unique([profileId, weekStart])
   @@map("diet_plans")
 }
 
@@ -282,8 +287,7 @@ model ExerciseEquipment {
   @@map("exercise_equipment")
 }
 
-// Un día de entrenamiento: dónde se entrena y qué se hizo. Como la dieta, solo se guarda la
-// semana en curso: al registrar un día se borran los de semanas anteriores.
+// Un día de entrenamiento: dónde se entrena y qué se hizo. Se guardan todos (historial).
 model WorkoutDay {
   id        Int               @id @default(autoincrement())
   profileId Int

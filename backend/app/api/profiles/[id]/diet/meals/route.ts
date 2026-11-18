@@ -39,8 +39,10 @@ export async function POST(request: Request, { params }: RouteContext) {
   }
   if (Object.keys(errors).length > 0) return validationError(errors);
 
-  const plan = await prisma.dietPlan.findUnique({ where: { profileId: profile.id } });
-  if (!plan || isoDate(plan.weekStart) !== isoDate(weekStart!)) {
+  const plan = await prisma.dietPlan.findUnique({
+    where: { profileId_weekStart: { profileId: profile.id, weekStart: weekStart! } },
+  });
+  if (!plan) {
     return NextResponse.json({ error: "Primero hay que generar la dieta de esta semana" }, { status: 409 });
   }
 

@@ -26,14 +26,6 @@ export function weekStartOf(date: Date) {
   return new Date(date.getTime() - day * 86_400_000);
 }
 
-/** Sin historial: borra los días de entrenamiento de otras semanas. */
-export async function dropOtherWeeks(prisma: PrismaClient, profileId: number, weekStart: Date) {
-  const weekEnd = new Date(weekStart.getTime() + 7 * 86_400_000);
-  await prisma.workoutDay.deleteMany({
-    where: { profileId, OR: [{ date: { lt: weekStart } }, { date: { gte: weekEnd } }] },
-  });
-}
-
 async function equipmentByLocation(prisma: PrismaClient, profileId: number) {
   const rows = await prisma.profileEquipment.findMany({ where: { profileId }, select: { equipmentId: true, location: true } });
   return {

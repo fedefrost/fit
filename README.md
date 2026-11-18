@@ -69,8 +69,9 @@ Al borrar un perfil se borran sus preferencias.
 
 ## Dieta semanal
 
-Cada perfil tiene como máximo **una dieta: la de la semana en curso** (lunes a domingo). Al generar
-la de otra semana se borra la anterior: no se guarda historial.
+Cada perfil tiene **una dieta por semana** (lunes a domingo). La app edita solo la de la semana en
+curso; las anteriores se conservan para el historial, junto con los objetivos recomendados
+(kcal, agua y gasto base) copiados al generarla y al consultarla.
 
 **Recetas.** Catálogo de solo lectura (332 recetas en español e inglés) cargado con las migraciones
 `20261116000100_recipe_catalog`, `20261117000000_more_recipes` y `20261118000100_recipes_by_protein`,
@@ -144,7 +145,7 @@ falla si falta la animación de algún ejercicio del catálogo. El motor del esq
 
 **Generador** (`backend/lib/workout.ts`): para 1 o 2 músculos elige 1 ejercicio general + 4 del
 músculo (o 3 de cada uno), solo con el equipamiento del lugar del día, evitando repetir en la semana.
-Como la dieta, solo se guarda la semana en curso.
+Los días de semanas anteriores se conservan para el historial.
 
 | Método | Ruta                                              | Descripción                                                    |
 |--------|---------------------------------------------------|----------------------------------------------------------------|
@@ -160,6 +161,17 @@ Como la dieta, solo se guarda la semana en curso.
 | DELETE | `/api/profiles/:id/workout/exercises/:entryId`    | Quita un ejercicio del día                                     |
 
 `GET /api/profiles` incluye en cada perfil `equipmentCounts: { home, gym }`.
+
+## Historial
+
+Calendario mensual (`/history`) con lo que recomendó la dieta, lo consumido y la hidratación de
+cada día; al tocar un día se abre el detalle con las comidas consumidas y los ejercicios hechos.
+Se puede cambiar de mes y año (hasta el mes actual).
+
+`GET /api/profiles/:id/history?month=YYYY-MM` devuelve solo los días con dieta o entrenamiento:
+`{ month, days: [{ date, targets, consumed: { calories, waterMl }, plannedCalories, meals, workout, baselineBurn }] }`.
+`targets` es lo recomendado esa semana (para dietas anteriores a este cambio, sin copia, se usa el
+perfil actual). Las calorías de los ejercicios se estiman con los datos actuales del perfil.
 
 ## Lista de compras
 

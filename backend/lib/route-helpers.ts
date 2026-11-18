@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { Profile } from "@prisma/client";
+import { isInWeek, parseIsoDate, parseWeekStart } from "@/lib/diet";
 import { prisma } from "@/lib/prisma";
 
 export function parseId(raw: string): number | null {
@@ -22,6 +23,21 @@ export async function readJson(request: Request): Promise<{ body: Record<string,
   } catch {
     return { response: badRequest("JSON inválido") };
   }
+}
+
+/**
+ * Fecha de la URL + semana del cuerpo ({ week }) para las rutas de un día de la semana.
+ * La fecha debe ser YYYY-MM-DD dentro de esa semana (que empieza en lunes).
+ */
+export function parseDayInWeek(rawDate: string, week: unknown) {
+  const weekStart = parseWeekStart(week);
+  const date = parseIsoDate(rawDate);
+  const errors: Record<string, string> = {};
+  if (!weekStart) errors.week = "week debe ser una fecha YYYY-MM-DD que caiga en lunes";
+  if (!date || (weekStart && !isInWeek(date, weekStart))) errors.date = "La fecha debe ser YYYY-MM-DD dentro de la semana";
+  return Object.keys(errors).length > 0
+    ? { response: validationError(errors) }
+    : { weekStart: weekStart!, date: date! };
 }
 
 /** Perfil por el id de la URL, o la respuesta de error (400 / 404) para devolver directamente. */

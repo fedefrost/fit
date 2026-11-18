@@ -26,7 +26,7 @@ import MealCard from '../components/diet/MealCard'
 import NutrientProgress from '../components/diet/NutrientProgress'
 import RecipePickerDialog from '../components/diet/RecipePickerDialog'
 import { daySummary, useDiet } from '../context/DietContext'
-import { addDaysIso, formatDay } from '../lib/dates'
+import { addDaysIso, capitalizeFirst, formatDay } from '../lib/dates'
 import { profileLabel } from '../lib/profile'
 import { formatLiters, formatNumber } from '../lib/recipes'
 
@@ -253,8 +253,8 @@ function DietContent({ label }) {
               sx={{ justifyContent: 'space-between', alignItems: { sm: 'center' }, mb: 2 }}
             >
               <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                <Typography variant="h5" component="h2" sx={{ textTransform: 'capitalize' }}>
-                  {formatDay(activeDate, language, { weekday: 'long', day: 'numeric', month: 'long' })}
+                <Typography variant="h5" component="h2">
+                  {capitalizeFirst(formatDay(activeDate, language, { weekday: 'long', day: 'numeric', month: 'long' }))}
                 </Typography>
                 {activeDate === today && <Chip size="small" color="secondary" label={t('diet.today')} />}
               </Stack>
@@ -333,7 +333,7 @@ function DietContent({ label }) {
                 onClick={() => setPicker({ open: true, mode: 'add', meal: null })}
                 sx={{
                   width: '100%',
-                  borderRadius: 4,
+                  borderRadius: '20px',
                   border: 2,
                   borderStyle: 'dashed',
                   borderColor: 'divider',

@@ -97,6 +97,49 @@ objetivo, evita repetir en la semana y ajusta las porciones (de a ¼, entre ½ y
 `week` es el lunes de la semana según la fecha local del cliente. Todas las rutas de dieta
 devuelven la dieta completa actualizada.
 
+## Rutina
+
+**Equipamiento.** Catálogo de solo lectura (`equipment`: mancuernas, barra con discos, banco,
+bicicleta fija y barra de dominadas). Cada perfil indica qué tiene en casa y en el gimnasio; un
+mismo equipo puede estar en los dos.
+
+**Ejercicios.** Catálogo de solo lectura (45 ejercicios es/en, migración
+`20261117000200_exercise_catalog`): 5 por músculo (piernas, bíceps, tríceps, glúteos, pecho,
+espalda, abdomen y hombros) y 5 generales de cardio/movilidad que se usan como calentamiento.
+Cada uno tiene su tipo de medida (`time` minutos, `reps` series × reps, `reps_weight` + kg), su
+MET, el equipamiento que requiere y si es de alto impacto.
+
+Las animaciones (stickman blanco sobre fondo azul) están en `frontend/public/exercises/<slug>.png`
+(miniatura) y `.gif` (animación). Se generan con `tools/exercise-animations/generate.py`
+(requiere `pip install pillow`); el script falla si falta la animación de algún ejercicio del catálogo.
+
+**Personalización** (`backend/lib/exercise.ts`):
+- Nivel físico (principiante / intermedio / avanzado) según actividad, IMC y edad.
+- Series, repeticiones, minutos y peso sugerido escalan con el nivel, el sexo y la edad.
+- Con obesidad o 65+ años no se proponen ejercicios de alto impacto y los de tiempo se limitan
+  a 20 min (30 min con 65+).
+- Calorías: MET × gasto basal del perfil por minuto (Mifflin-St Jeor, usa edad, peso, altura y
+  sexo), con un plus por la carga y 1 min de descanso por serie a 1,5 MET. Son estimaciones.
+
+**Generador** (`backend/lib/workout.ts`): para 1 o 2 músculos elige 1 ejercicio general + 4 del
+músculo (o 3 de cada uno), solo con el equipamiento del lugar del día, evitando repetir en la semana.
+Como la dieta, solo se guarda la semana en curso.
+
+| Método | Ruta                                              | Descripción                                                    |
+|--------|---------------------------------------------------|----------------------------------------------------------------|
+| GET    | `/api/equipment`                                  | Catálogo de equipamiento                                       |
+| GET    | `/api/exercises`                                  | Catálogo de ejercicios (con `equipmentIds`)                    |
+| GET    | `/api/profiles/:id/equipment`                     | `{ home: Equipment[], gym: Equipment[] }`                      |
+| PUT    | `/api/profiles/:id/equipment`                     | `{ home: id[], gym: id[] }`                                    |
+| GET    | `/api/profiles/:id/workout?week=YYYY-MM-DD`       | Semana: nivel, equipamiento, recomendaciones y días            |
+| PUT    | `/api/profiles/:id/workout/days/:date`            | `{ week, location: "home" \| "gym" }`: dónde se entrena ese día |
+| POST   | `/api/profiles/:id/workout/days/:date/generate`   | `{ week, muscles }` (1 a 2): genera la rutina del día          |
+| POST   | `/api/profiles/:id/workout/days/:date/exercises`  | `{ week, exerciseId, minutes \| sets + reps (+ weightKg) }`: añade uno hecho |
+| PATCH  | `/api/profiles/:id/workout/exercises/:entryId`    | `{ done?, exerciseId?, minutes?, sets?, reps?, weightKg? }`     |
+| DELETE | `/api/profiles/:id/workout/exercises/:entryId`    | Quita un ejercicio del día                                     |
+
+`GET /api/profiles` incluye en cada perfil `equipmentCounts: { home, gym }`.
+
 ## Crear nuevas migraciones
 
 ```bash

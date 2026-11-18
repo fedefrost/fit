@@ -17,6 +17,8 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import BlockIcon from '@mui/icons-material/Block'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import FavoriteIcon from '@mui/icons-material/Favorite'
+import FitnessCenterIcon from '@mui/icons-material/FitnessCenter'
+import HomeIcon from '@mui/icons-material/Home'
 import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
@@ -49,10 +51,54 @@ export function ProfileAvatar({ sex, size = 44 }) {
 }
 
 const NO_FOODS = { preferred: 0, rejected: 0 }
+const NO_EQUIPMENT = { home: 0, gym: 0 }
 
-export default function ProfileCard({ profile, label, onSelect, onEdit, onDelete, onEditFoods }) {
+/** Fila clicable de la tarjeta (alimentos, equipamiento) con contadores e icono. */
+function SettingsRow({ icon, title, onClick, ariaLabel, counts }) {
+  return (
+    <ButtonBase
+      onClick={onClick}
+      aria-label={ariaLabel}
+      sx={{
+        width: '100%',
+        justifyContent: 'space-between',
+        gap: 1,
+        px: 1.5,
+        py: 1.25,
+        borderRadius: 3,
+        bgcolor: 'action.hover',
+        transition: 'background-color 150ms',
+        '&:hover': { bgcolor: 'action.selected' },
+        '&.Mui-focusVisible': { outline: '2px solid', outlineColor: 'primary.main' },
+      }}
+    >
+      <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+        {icon}
+        <Typography variant="body2" sx={{ fontWeight: 700 }}>
+          {title}
+        </Typography>
+      </Stack>
+      <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+        {counts.map(({ Icon, color, value, hint }) => (
+          <Tooltip key={hint} title={hint}>
+            <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', color }}>
+              <Icon sx={{ fontSize: 16 }} />
+              <Typography variant="body2" sx={{ fontWeight: 800 }}>
+                {value}
+              </Typography>
+            </Stack>
+          </Tooltip>
+        ))}
+        <ChevronRightIcon color="action" fontSize="small" />
+      </Stack>
+    </ButtonBase>
+  )
+}
+
+export default function ProfileCard({ profile, label, onSelect, onEdit, onDelete, onEditFoods, onEditEquipment }) {
   const { t } = useTranslation()
   const foodCounts = profile.foodCounts ?? NO_FOODS
+  const equipmentCounts = profile.equipmentCounts ?? NO_EQUIPMENT
   const bmiValue = bmi(profile.weight, profile.height)
   const category = bmiCategory(bmiValue, profile.age)
 
@@ -105,48 +151,28 @@ export default function ProfileCard({ profile, label, onSelect, onEdit, onDelete
           <Chip label={t(category.key)} color={category.color} size="small" variant="outlined" />
         </Stack>
 
-        <ButtonBase
-          onClick={onEditFoods}
-          aria-label={t('foods.cardAria', { label, preferred: foodCounts.preferred, rejected: foodCounts.rejected })}
-          sx={{
-            width: '100%',
-            justifyContent: 'space-between',
-            gap: 1,
-            px: 1.5,
-            py: 1.25,
-            borderRadius: 3,
-            bgcolor: 'action.hover',
-            transition: 'background-color 150ms',
-            '&:hover': { bgcolor: 'action.selected' },
-            '&.Mui-focusVisible': { outline: '2px solid', outlineColor: 'primary.main' },
-          }}
-        >
-          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-            <RestaurantMenuIcon color="primary" fontSize="small" />
-            <Typography variant="body2" sx={{ fontWeight: 700 }}>
-              {t('foods.cardTitle')}
-            </Typography>
-          </Stack>
-          <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-            <Tooltip title={t('foods.preferredShort', { count: foodCounts.preferred })}>
-              <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', color: 'success.main' }}>
-                <FavoriteIcon sx={{ fontSize: 16 }} />
-                <Typography variant="body2" sx={{ fontWeight: 800 }}>
-                  {foodCounts.preferred}
-                </Typography>
-              </Stack>
-            </Tooltip>
-            <Tooltip title={t('foods.rejectedShort', { count: foodCounts.rejected })}>
-              <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', color: 'error.main' }}>
-                <BlockIcon sx={{ fontSize: 16 }} />
-                <Typography variant="body2" sx={{ fontWeight: 800 }}>
-                  {foodCounts.rejected}
-                </Typography>
-              </Stack>
-            </Tooltip>
-            <ChevronRightIcon color="action" fontSize="small" />
-          </Stack>
-        </ButtonBase>
+        <Stack spacing={1}>
+          <SettingsRow
+            icon={<RestaurantMenuIcon color="primary" fontSize="small" />}
+            title={t('foods.cardTitle')}
+            onClick={onEditFoods}
+            ariaLabel={t('foods.cardAria', { label, preferred: foodCounts.preferred, rejected: foodCounts.rejected })}
+            counts={[
+              { Icon: FavoriteIcon, color: 'success.main', value: foodCounts.preferred, hint: t('foods.preferredShort', { count: foodCounts.preferred }) },
+              { Icon: BlockIcon, color: 'error.main', value: foodCounts.rejected, hint: t('foods.rejectedShort', { count: foodCounts.rejected }) },
+            ]}
+          />
+          <SettingsRow
+            icon={<FitnessCenterIcon color="primary" fontSize="small" />}
+            title={t('equipment.cardTitle')}
+            onClick={onEditEquipment}
+            ariaLabel={t('equipment.cardAria', { label, home: equipmentCounts.home, gym: equipmentCounts.gym })}
+            counts={[
+              { Icon: HomeIcon, color: 'primary.main', value: equipmentCounts.home, hint: t('equipment.homeShort', { count: equipmentCounts.home }) },
+              { Icon: FitnessCenterIcon, color: 'secondary.main', value: equipmentCounts.gym, hint: t('equipment.gymShort', { count: equipmentCounts.gym }) },
+            ]}
+          />
+        </Stack>
 
         <Typography variant="caption" color="text.secondary" sx={{ mt: 'auto' }}>
           {t('profiles.updatedAt', { date: formatDate(profile.updatedAt) })}

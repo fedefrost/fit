@@ -45,7 +45,7 @@ export default function MealCard({ meal, busy, onToggleConsumed, onSwap, onRemov
       component="article"
       aria-label={`${t(`diet.slots.${meal.slot}`)}: ${name}`}
       sx={(theme) => ({
-        borderRadius: 4,
+        borderRadius: '20px',
         transition: 'border-color 150ms, background-color 150ms',
         ...(meal.consumed && {
           borderColor: theme.vars.palette.success.main,

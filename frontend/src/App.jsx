@@ -2,11 +2,13 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import AppLayout from './components/AppLayout'
 import RequireProfile from './components/RequireProfile'
 import { DietProvider } from './context/DietContext'
+import { WorkoutProvider } from './context/WorkoutContext'
 import { SelectedProfileProvider, useSelectedProfile } from './context/SelectedProfileContext'
 import { SECTIONS } from './lib/sections'
 import DietPage from './pages/DietPage'
 import MenuPage from './pages/MenuPage'
 import ProfilesPage from './pages/ProfilesPage'
+import RoutinePage from './pages/RoutinePage'
 import SectionPage from './pages/SectionPage'
 
 /** "/" y rutas desconocidas: al menú si hay perfil elegido, si no a /profiles. */
@@ -16,12 +18,13 @@ function HomeRedirect() {
 }
 
 // Secciones con página propia; el resto muestra "Próximamente".
-const SECTION_PAGES = { diet: <DietPage /> }
+const SECTION_PAGES = { diet: <DietPage />, routine: <RoutinePage /> }
 
 export default function App() {
   return (
     <SelectedProfileProvider>
       <DietProvider>
+        <WorkoutProvider>
         <BrowserRouter>
           <Routes>
             <Route element={<AppLayout />}>
@@ -36,6 +39,7 @@ export default function App() {
             <Route path="*" element={<HomeRedirect />} />
           </Routes>
         </BrowserRouter>
+        </WorkoutProvider>
       </DietProvider>
     </SelectedProfileProvider>
   )

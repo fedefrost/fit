@@ -33,6 +33,8 @@ model Profile {
   updatedAt     DateTime      @updatedAt
   foods         ProfileFood[]
   dietPlan      DietPlan?
+  equipment     ProfileEquipment[]
+  workoutDays   WorkoutDay[]
 
   @@map("profiles")
 }
@@ -175,4 +177,132 @@ model DietMeal {
   @@index([planId, date])
   @@index([recipeId])
   @@map("diet_meals")
+}
+
+// ---------- Rutina ----------
+
+enum EquipmentLocation {
+  home
+  gym
+}
+
+// Catálogo de máquinas y herramientas. Solo lectura, se carga con migraciones
+// (ver prisma/migrations/*_exercise_catalog).
+model Equipment {
+  id        Int                 @id @default(autoincrement())
+  slug      String              @unique
+  nameEs    String
+  nameEn    String
+  profiles  ProfileEquipment[]
+  exercises ExerciseEquipment[]
+
+  @@map("equipment")
+}
+
+// Qué tiene el perfil en casa y en el gimnasio. A diferencia de los alimentos, un mismo
+// equipo puede estar en los dos lugares.
+model ProfileEquipment {
+  profileId   Int
+  equipmentId Int
+  location    EquipmentLocation
+  createdAt   DateTime          @default(now())
+  profile     Profile           @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  equipment   Equipment         @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
+
+  @@id([profileId, equipmentId, location])
+  @@index([equipmentId])
+  @@map("profile_equipment")
+}
+
+enum Muscle {
+  legs
+  biceps
+  triceps
+  glutes
+  chest
+  back
+  abs
+  shoulders
+  general // cardio y movilidad: no dependen del músculo elegido (calentamiento)
+}
+
+enum ExerciseMeasure {
+  time // minutos
+  reps // series × repeticiones
+  reps_weight // series × repeticiones × kg
+}
+
+// Catálogo de ejercicios. Solo lectura, se carga con migraciones.
+// Las prescripciones base son para un nivel intermedio; lib/exercise.ts las ajusta al perfil.
+model Exercise {
+  id             Int                 @id @default(autoincrement())
+  slug           String              @unique // también nombra la animación: /exercises/<slug>.png|.gif
+  nameEs         String
+  nameEn         String
+  instructionsEs String
+  instructionsEn String
+  muscle         Muscle
+  measure        ExerciseMeasure
+  met            Float // equivalente metabólico (Compendium of Physical Activities)
+  baseMinutes    Float? // measure = time
+  baseReps       Int? // measure = reps | reps_weight
+  secondsPerRep  Float               @default(3) // para estimar la duración de las series
+  loadFactor     Float? // peso sugerido = loadFactor × peso corporal (intermedio)
+  highImpact     Boolean             @default(false) // saltos/carrera: no se recomiendan con obesidad o 65+
+  equipment      ExerciseEquipment[] // todo lo necesario; vacío = peso corporal
+  entries        WorkoutExercise[]
+
+  @@map("exercises")
+}
+
+model ExerciseEquipment {
+  exerciseId  Int
+  equipmentId Int
+  exercise    Exercise  @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  equipment   Equipment @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
+
+  @@id([exerciseId, equipmentId])
+  @@index([equipmentId])
+  @@map("exercise_equipment")
+}
+
+// Un día de entrenamiento: dónde se entrena y qué se hizo. Como la dieta, solo se guarda la
+// semana en curso: al registrar un día se borran los de semanas anteriores.
+model WorkoutDay {
+  id        Int               @id @default(autoincrement())
+  profileId Int
+  date      DateTime          @db.Date
+  location  EquipmentLocation
+  muscles   Muscle[] // los elegidos al generar (hasta 2)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  profile   Profile           @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  entries   WorkoutExercise[]
+
+  @@unique([profileId, date])
+  @@map("workout_days")
+}
+
+enum WorkoutSource {
+  planned // generado
+  extra // añadido por el usuario
+}
+
+model WorkoutExercise {
+  id         Int           @id @default(autoincrement())
+  dayId      Int
+  exerciseId Int
+  source     WorkoutSource
+  minutes    Float?
+  sets       Int?
+  reps       Int?
+  weightKg   Float?
+  done       Boolean       @default(false)
+  createdAt  DateTime      @default(now())
+  day        WorkoutDay    @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  exercise   Exercise      @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
+
+  @@index([dayId])
+  @@index([exerciseId])
+  @@map("workout_exercises")
 }

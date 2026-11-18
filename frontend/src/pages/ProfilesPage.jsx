@@ -19,6 +19,7 @@ import { useSelectedProfile } from '../context/SelectedProfileContext'
 import { MAX_PROFILES, profileLabel } from '../lib/profile'
 import DeleteProfileDialog from '../components/profiles/DeleteProfileDialog'
 import EmptySlotCard from '../components/profiles/EmptySlotCard'
+import EquipmentDialog from '../components/profiles/EquipmentDialog'
 import FoodPreferencesDialog from '../components/profiles/FoodPreferencesDialog'
 import ProfileCard from '../components/profiles/ProfileCard'
 import ProfileFormDialog from '../components/profiles/ProfileFormDialog'
@@ -64,6 +65,8 @@ export default function ProfilesPage() {
   const [deleting, setDeleting] = useState(false)
   const [foodsOpen, setFoodsOpen] = useState(false)
   const [foodsTarget, setFoodsTarget] = useState({ profile: null, index: 0 })
+  const [equipmentOpen, setEquipmentOpen] = useState(false)
+  const [equipmentTarget, setEquipmentTarget] = useState({ profile: null, index: 0 })
   const [toast, setToast] = useState(null)
 
   const count = profiles.length
@@ -107,6 +110,24 @@ export default function ProfilesPage() {
   // Estable (useCallback) porque el diálogo lo usa como dependencia al cargar.
   const handleFoodsGone = useCallback(() => {
     setFoodsOpen(false)
+    notify(t('profiles.goneOnEdit'), 'warning')
+    load()
+  }, [load, notify, t])
+
+  const openEquipment = (profile, index) => {
+    setEquipmentTarget({ profile, index })
+    setEquipmentOpen(true)
+  }
+
+  const handleEquipmentSaved = (equipmentCounts) => {
+    const { profile, index } = equipmentTarget
+    setProfiles((current) => current.map((item) => (item.id === profile.id ? { ...item, equipmentCounts } : item)))
+    setEquipmentOpen(false)
+    notify(t('equipment.saved', { label: profileLabel(t, index) }))
+  }
+
+  const handleEquipmentGone = useCallback(() => {
+    setEquipmentOpen(false)
     notify(t('profiles.goneOnEdit'), 'warning')
     load()
   }, [load, notify, t])
@@ -286,6 +307,7 @@ export default function ProfilesPage() {
                   onEdit={() => openEdit(profile, index)}
                   onDelete={() => openDelete(profile, index)}
                   onEditFoods={() => openFoods(profile, index)}
+                  onEditEquipment={() => openEquipment(profile, index)}
                 />
               </Grid>
             ))}
@@ -327,6 +349,15 @@ export default function ProfilesPage() {
         onClose={() => setFoodsOpen(false)}
         onSaved={handleFoodsSaved}
         onGone={handleFoodsGone}
+      />
+
+      <EquipmentDialog
+        open={equipmentOpen}
+        profile={equipmentTarget.profile}
+        label={profileLabel(t, equipmentTarget.index)}
+        onClose={() => setEquipmentOpen(false)}
+        onSaved={handleEquipmentSaved}
+        onGone={handleEquipmentGone}
       />
 
       <Snackbar

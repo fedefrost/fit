@@ -4,20 +4,25 @@ import { MAX_PROFILES, parseProfileInput } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
-// GET /api/profiles -> listar, con cuántos alimentos preferidos y rechazados tiene cada uno
+// GET /api/profiles -> listar, con cuántos alimentos (preferidos/rechazados) y cuánto
+// equipamiento (casa/gimnasio) tiene cada uno
 export async function GET() {
-  const [profiles, counts] = await Promise.all([
+  const [profiles, counts, equipment] = await Promise.all([
     prisma.profile.findMany({ orderBy: { id: "asc" } }),
     prisma.profileFood.groupBy({ by: ["profileId", "preference"], _count: { _all: true } }),
+    prisma.profileEquipment.groupBy({ by: ["profileId", "location"], _count: { _all: true } }),
   ]);
 
   const countFor = (profileId: number, preference: "preferred" | "rejected") =>
     counts.find((row) => row.profileId === profileId && row.preference === preference)?._count._all ?? 0;
+  const equipmentFor = (profileId: number, location: "home" | "gym") =>
+    equipment.find((row) => row.profileId === profileId && row.location === location)?._count._all ?? 0;
 
   return NextResponse.json(
     profiles.map((profile) => ({
       ...profile,
       foodCounts: { preferred: countFor(profile.id, "preferred"), rejected: countFor(profile.id, "rejected") },
+      equipmentCounts: { home: equipmentFor(profile.id, "home"), gym: equipmentFor(profile.id, "gym") },
     })),
   );
 }
@@ -55,5 +60,8 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.json({ ...profile, foodCounts: { preferred: 0, rejected: 0 } }, { status: 201 });
+  return NextResponse.json(
+    { ...profile, foodCounts: { preferred: 0, rejected: 0 }, equipmentCounts: { home: 0, gym: 0 } },
+    { status: 201 },
+  );
 }

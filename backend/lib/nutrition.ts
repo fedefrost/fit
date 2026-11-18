@@ -42,10 +42,16 @@ const roundTo = (value: number, step: number) => Math.round(value / step) * step
  * - Nunca por debajo de 1200 kcal (1500 en hombres), salvo que el gasto estimado sea menor.
  * Es una estimación orientativa, no reemplaza el consejo de un profesional de la salud.
  */
+/** Gasto basal (kcal/día) con Mifflin-St Jeor; para sexo "other", promedio de ambas constantes. */
+export function basalMetabolicRate(profile: Pick<Profile, "weight" | "height" | "age" | "sex">) {
+  const { weight, height, age, sex } = profile;
+  const sexConstant = sex === "male" ? 5 : sex === "female" ? -161 : -78;
+  return 10 * weight + 6.25 * height - 5 * age + sexConstant;
+}
+
 export function dailyTargets(profile: Pick<Profile, "weight" | "height" | "age" | "sex" | "activityLevel">): DailyTargets {
   const { weight, height, age, sex, activityLevel } = profile;
-  const sexConstant = sex === "male" ? 5 : sex === "female" ? -161 : -78;
-  const bmr = 10 * weight + 6.25 * height - 5 * age + sexConstant;
+  const bmr = basalMetabolicRate(profile);
   const tdee = bmr * ACTIVITY_FACTOR[activityLevel];
 
   const bmi = weight / (height / 100) ** 2;

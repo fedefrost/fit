@@ -30,3 +30,6 @@ export function addDaysIso(iso, days) {
 }
 
 export const formatDay = (iso, language, options) => new Intl.DateTimeFormat(language, options).format(fromIsoDate(iso))
+
+/** "martes, 17 de noviembre" → "Martes, 17 de noviembre" (solo la primera letra). */
+export const capitalizeFirst = (text) => text.charAt(0).toUpperCase() + text.slice(1)

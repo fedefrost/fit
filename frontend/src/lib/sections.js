@@ -1,7 +1,7 @@
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter'
 import InsightsIcon from '@mui/icons-material/Insights'
 import RestaurantIcon from '@mui/icons-material/Restaurant'
-import TipsAndUpdatesIcon from '@mui/icons-material/TipsAndUpdates'
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart'
 
 /**
  * Secciones del menú principal. `color` es la paleta del tema que usa cada ventana;
@@ -12,5 +12,5 @@ export const SECTIONS = [
   { key: 'diet', path: '/diet', Icon: RestaurantIcon, color: 'secondary' },
   { key: 'routine', path: '/routine', Icon: FitnessCenterIcon, color: 'primary' },
   { key: 'history', path: '/history', Icon: InsightsIcon, color: 'primary' },
-  { key: 'suggestion', path: '/suggestion', Icon: TipsAndUpdatesIcon, color: 'secondary' },
+  { key: 'shopping', path: '/shopping', Icon: ShoppingCartIcon, color: 'secondary' },
 ]

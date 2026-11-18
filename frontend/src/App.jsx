@@ -9,6 +9,7 @@ import DietPage from './pages/DietPage'
 import MenuPage from './pages/MenuPage'
 import ProfilesPage from './pages/ProfilesPage'
 import RoutinePage from './pages/RoutinePage'
+import ShoppingPage from './pages/ShoppingPage'
 import SectionPage from './pages/SectionPage'
 
 /** "/" y rutas desconocidas: al menú si hay perfil elegido, si no a /profiles. */
@@ -18,7 +19,7 @@ function HomeRedirect() {
 }
 
 // Secciones con página propia; el resto muestra "Próximamente".
-const SECTION_PAGES = { diet: <DietPage />, routine: <RoutinePage /> }
+const SECTION_PAGES = { diet: <DietPage />, routine: <RoutinePage />, shopping: <ShoppingPage /> }
 
 export default function App() {
   return (

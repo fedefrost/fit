@@ -161,6 +161,32 @@ Como la dieta, solo se guarda la semana en curso.
 
 `GET /api/profiles` incluye en cada perfil `equipmentCounts: { home, gym }`.
 
+## Lista de compras
+
+Reemplaza a la antigua sección "Sugerencia" del menú (`/shopping`). Como la dieta, solo existe la
+de la semana en curso: al usar otra semana se vacía (se conserva la cantidad de personas).
+
+**Ingredientes de la dieta** (`backend/lib/shopping.ts`): no se guardan, se calculan en cada
+respuesta sumando los ingredientes de desayuno, almuerzo y cena del plan en los días elegidos
+(todos por defecto) × porciones × personas. Las comidas agregadas a mano no cuentan (ya se
+comieron). Se guarda solo qué ingredientes se marcaron como comprados (`shopping_checks`, por
+clave `"<foodId>:<unidad>"`), así la lista sigue a la dieta si se cambia o regenera una comida.
+El frontend redondea hacia arriba para comprar (g/ml de a 10, kg/L desde 1000, unidades enteras).
+
+**Agregados a mano** (`shopping_items`): un alimento del catálogo o texto libre, con cantidad
+opcional; hasta 100 por lista.
+
+| Método | Ruta                                          | Descripción                                                    |
+|--------|-----------------------------------------------|----------------------------------------------------------------|
+| GET    | `/api/profiles/:id/shopping?week=YYYY-MM-DD`  | `{ weekStart, people, days, hasDiet, ingredients, items }`     |
+| PUT    | `/api/profiles/:id/shopping`                  | `{ week, people? (1–20), days? (0 = lunes … 6; [] = toda la semana), uncheckAll? }` |
+| PUT    | `/api/profiles/:id/shopping/checks`           | `{ week, key, checked }`: marca un ingrediente de la dieta     |
+| POST   | `/api/profiles/:id/shopping/items`            | `{ week, foodId \| name, amount? }`: agrega un artículo         |
+| PATCH  | `/api/profiles/:id/shopping/items/:itemId`    | `{ checked?, amount? }`                                        |
+| DELETE | `/api/profiles/:id/shopping/items/:itemId`    | Quita un artículo agregado                                     |
+
+Todas las rutas devuelven la lista completa actualizada.
+
 ## Crear nuevas migraciones
 
 ```bash

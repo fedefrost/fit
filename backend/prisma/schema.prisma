@@ -48,6 +48,7 @@ model Profile {
   dietPlan      DietPlan?
   equipment     ProfileEquipment[]
   workoutDays   WorkoutDay[]
+  shoppingList  ShoppingList?
 
   @@map("profiles")
 }
@@ -82,6 +83,7 @@ model Food {
   nameEn   String
   profiles ProfileFood[]
   recipes  RecipeIngredient[]
+  shopping ShoppingItem[]
 
   @@map("foods")
 }
@@ -319,4 +321,51 @@ model WorkoutExercise {
   @@index([dayId])
   @@index([exerciseId])
   @@map("workout_exercises")
+}
+
+// ---------- Lista de compras ----------
+
+// Lista de compras de la semana en curso. Los ingredientes de la dieta no se guardan: se calculan
+// de las comidas del plan (× personas) en cada respuesta; aquí solo se guardan las marcas de
+// "comprado" de esos ingredientes y lo que el usuario agrega a mano. Al pasar a otra semana se
+// vacía (como la dieta, no hay historial).
+model ShoppingList {
+  id        Int             @id @default(autoincrement())
+  profileId Int             @unique
+  weekStart DateTime        @db.Date
+  people    Int             @default(1) // multiplica las cantidades por porción
+  days      Int[]           @default([]) // días de la semana incluidos (0 = lunes); vacío = toda la semana
+  updatedAt DateTime        @updatedAt
+  profile   Profile         @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  checks    ShoppingCheck[]
+  items     ShoppingItem[]
+
+  @@map("shopping_lists")
+}
+
+// Ingrediente de la dieta marcado como comprado. `key` = "<foodId>:<unidad>", como en la respuesta.
+model ShoppingCheck {
+  listId Int
+  key    String
+  list   ShoppingList @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+  @@id([listId, key])
+  @@map("shopping_checks")
+}
+
+// Artículo agregado a mano: un alimento del catálogo o texto libre, con una cantidad opcional.
+model ShoppingItem {
+  id        Int          @id @default(autoincrement())
+  listId    Int
+  foodId    Int?
+  name      String? // texto libre cuando no es del catálogo
+  amount    String? // "2 kg", "1 paquete"...
+  checked   Boolean      @default(false)
+  createdAt DateTime     @default(now())
+  list      ShoppingList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  food      Food?        @relation(fields: [foodId], references: [id], onDelete: Restrict)
+
+  @@index([listId])
+  @@index([foodId])
+  @@map("shopping_items")
 }

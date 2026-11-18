@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
+import ButtonBase from '@mui/material/ButtonBase'
 import Checkbox from '@mui/material/Checkbox'
 import Chip from '@mui/material/Chip'
 import Dialog from '@mui/material/Dialog'
@@ -20,6 +21,7 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Typography from '@mui/material/Typography'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import PlayCircleIcon from '@mui/icons-material/PlayCircle'
 import SearchIcon from '@mui/icons-material/Search'
 import { apiErrorMessage } from '../../api/client'
 import { useSelectedProfile } from '../../context/SelectedProfileContext'
@@ -35,6 +37,7 @@ import {
   parseMeasures,
 } from '../../lib/exercise'
 import { normalizeText } from '../../lib/recipes'
+import ExerciseAnimationDialog from './ExerciseAnimationDialog'
 import MeasureFields from './MeasureFields'
 
 /**
@@ -55,6 +58,7 @@ export default function ExercisePickerDialog({ open, mode, location, initialMusc
   const [texts, setTexts] = useState({})
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [preview, setPreview] = useState(null)
 
   useEffect(() => {
     if (open) {
@@ -65,6 +69,7 @@ export default function ExercisePickerDialog({ open, mode, location, initialMusc
       setTexts({})
       setSaving(false)
       setError('')
+      setPreview(null)
     }
   }, [open, initialMuscle])
 
@@ -163,14 +168,29 @@ export default function ExercisePickerDialog({ open, mode, location, initialMusc
               const isSelected = exercise.id === selectedId
               const needs = exercise.equipmentIds.map((id) => equipmentName(equipmentById.get(id) ?? { nameEs: '—', nameEn: '—' }, language))
               return (
+                <Stack key={exercise.id} direction="row" spacing={1} sx={{ alignItems: 'center', mb: 0.5 }}>
+                  {/* La miniatura abre la animación; el resto de la fila elige el ejercicio. */}
+                  <ButtonBase
+                    onClick={() => setPreview(exercise)}
+                    aria-label={t('routine.showHow', { name: exerciseName(exercise, language) })}
+                    sx={{
+                      position: 'relative',
+                      flexShrink: 0,
+                      ml: 1,
+                      borderRadius: '10px',
+                      overflow: 'hidden',
+                      '&.Mui-focusVisible': { outline: '3px solid', outlineColor: 'primary.main' },
+                    }}
+                  >
+                    <Box component="img" src={exerciseImage(exercise)} alt="" width={56} height={56} sx={{ display: 'block' }} />
+                    <PlayCircleIcon sx={{ position: 'absolute', right: 2, bottom: 2, color: '#FFFFFF', fontSize: 18, opacity: 0.9 }} />
+                  </ButtonBase>
                 <ListItemButton
-                  key={exercise.id}
                   selected={isSelected}
                   onClick={() => choose(exercise)}
                   aria-pressed={isSelected}
-                  sx={{ borderRadius: 3, mb: 0.5, gap: 1.5 }}
+                  sx={{ borderRadius: 3, gap: 1.5, flex: 1, minWidth: 0 }}
                 >
-                  <Box component="img" src={exerciseImage(exercise)} alt="" width={56} height={56} sx={{ borderRadius: '10px', flexShrink: 0 }} />
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Typography sx={{ fontWeight: 700 }}>{exerciseName(exercise, language)}</Typography>
                     <Stack direction="row" useFlexGap spacing={1} sx={{ flexWrap: 'wrap', alignItems: 'center', mt: 0.25 }}>
@@ -183,6 +203,7 @@ export default function ExercisePickerDialog({ open, mode, location, initialMusc
                   </Box>
                   <CheckCircleIcon color={isSelected ? 'primary' : 'disabled'} sx={{ opacity: isSelected ? 1 : 0.35 }} />
                 </ListItemButton>
+                </Stack>
               )
             })}
           </List>
@@ -217,6 +238,7 @@ export default function ExercisePickerDialog({ open, mode, location, initialMusc
           {mode === 'swap' ? t('exercisePicker.confirmSwap') : t('exercisePicker.confirmAdd')}
         </Button>
       </DialogActions>
+      <ExerciseAnimationDialog exercise={preview} onClose={() => setPreview(null)} />
     </Dialog>
   )
 }

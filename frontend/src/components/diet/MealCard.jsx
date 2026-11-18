@@ -14,6 +14,7 @@ import Typography from '@mui/material/Typography'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import FastfoodIcon from '@mui/icons-material/Fastfood'
 import FavoriteIcon from '@mui/icons-material/Favorite'
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment'
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
@@ -21,7 +22,16 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import WaterDropIcon from '@mui/icons-material/WaterDrop'
 import { useDiet } from '../../context/DietContext'
 import { foodName } from '../../lib/foods'
-import { formatNumber, formatQuantity, recipeContains, recipeName, recipeSummary, SLOT_ICONS } from '../../lib/recipes'
+import {
+  formatNumber,
+  formatQuantity,
+  hasRecipeDetails,
+  isJunk,
+  recipeContains,
+  recipeName,
+  recipeSummary,
+  SLOT_ICONS,
+} from '../../lib/recipes'
 
 /** Una comida de la dieta: receta, calorías, hidratación, tick de consumida y acciones. */
 export default function MealCard({ meal, busy, onToggleConsumed, onSwap, onRemove }) {
@@ -102,6 +112,7 @@ export default function MealCard({ meal, busy, onToggleConsumed, onSwap, onRemov
             {hasRejected && (
               <Chip size="small" icon={<WarningAmberIcon />} label={t('diet.includesRejected')} color="error" variant="outlined" />
             )}
+            {isJunk(recipe) && <Chip size="small" icon={<FastfoodIcon />} label={t('diet.junkChip')} color="warning" />}
           </Stack>
         </Box>
 
@@ -124,16 +135,22 @@ export default function MealCard({ meal, busy, onToggleConsumed, onSwap, onRemov
       <Divider />
 
       <Stack direction="row" spacing={1} sx={{ px: 1.5, py: 1, justifyContent: 'space-between' }}>
-        <Button
-          size="small"
-          color="inherit"
-          onClick={() => setOpen((value) => !value)}
-          endIcon={open ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-          aria-expanded={open}
-          aria-controls={detailsId}
-        >
-          {open ? t('diet.hideRecipe') : t('diet.showRecipe')}
-        </Button>
+        {hasRecipeDetails(recipe) ? (
+          <Button
+            size="small"
+            color="inherit"
+            onClick={() => setOpen((value) => !value)}
+            endIcon={open ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+            aria-expanded={open}
+            aria-controls={detailsId}
+          >
+            {open ? t('diet.hideRecipe') : t('diet.showRecipe')}
+          </Button>
+        ) : (
+          <Typography variant="caption" color="text.secondary" sx={{ alignSelf: 'center', px: 1 }}>
+            {t('diet.noRecipe')}
+          </Typography>
+        )}
         {isExtra ? (
           <Button
             size="small"

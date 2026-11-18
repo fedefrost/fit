@@ -1,6 +1,7 @@
 import type { EquipmentLocation, Muscle, PrismaClient, Profile } from "@prisma/client";
 import { isoDate, weekDates } from "./diet";
 import { caloriesBurned, fitnessProfile, kcalPerMinute, recommendMeasures, type Measures } from "./exercise";
+import { baselineBurn } from "./nutrition";
 
 /** Músculos que se pueden elegir al generar ("general" es el calentamiento, no se elige). */
 export const TRAINABLE_MUSCLES = ["legs", "biceps", "triceps", "glutes", "chest", "back", "abs", "shoulders"] as const;
@@ -75,6 +76,7 @@ export async function buildWorkoutResponse(prisma: PrismaClient, profile: Profil
   return {
     weekStart: isoDate(weekStart),
     fitness: fitnessProfile(profile),
+    baselineBurn: baselineBurn(profile), // gasto de un día normal sin ejercicio (rutina diaria)
     equipment,
     personalized: exercises.map((exercise) => ({
       exerciseId: exercise.id,

@@ -6,6 +6,17 @@ export type SexValue = (typeof SEX_VALUES)[number];
 export const ACTIVITY_LEVELS = ["sedentary", "light", "moderate", "active", "very_active"] as const;
 export type ActivityLevelValue = (typeof ACTIVITY_LEVELS)[number];
 
+export const LIFESTYLES = [
+  "office",
+  "standing_work",
+  "physical_work",
+  "remote_work",
+  "part_time",
+  "student",
+  "unemployed",
+] as const;
+export type LifestyleValue = (typeof LIFESTYLES)[number];
+
 export type ProfileInput = {
   weight: number;
   height: number;
@@ -13,6 +24,8 @@ export type ProfileInput = {
   sex: SexValue;
   // Opcional por compatibilidad: si falta, al crear se usa "sedentary" y al editar no se cambia.
   activityLevel?: ActivityLevelValue;
+  // Opcional por compatibilidad: si falta, al crear se usa "office" y al editar no se cambia.
+  lifestyle?: LifestyleValue;
 };
 
 type ParseResult =
@@ -26,7 +39,7 @@ export function parseProfileInput(body: unknown): ParseResult {
     return { ok: false, errors: { body: "El cuerpo debe ser un objeto JSON" } };
   }
 
-  const { weight, height, age, sex, activityLevel } = body as Record<string, unknown>;
+  const { weight, height, age, sex, activityLevel, lifestyle } = body as Record<string, unknown>;
 
   if (typeof weight !== "number" || !Number.isFinite(weight) || weight <= 0 || weight > 500) {
     errors.weight = "weight debe ser un número entre 0 y 500 (kg)";
@@ -46,6 +59,9 @@ export function parseProfileInput(body: unknown): ParseResult {
   ) {
     errors.activityLevel = `activityLevel debe ser uno de: ${ACTIVITY_LEVELS.join(", ")}`;
   }
+  if (lifestyle !== undefined && (typeof lifestyle !== "string" || !LIFESTYLES.includes(lifestyle as LifestyleValue))) {
+    errors.lifestyle = `lifestyle debe ser uno de: ${LIFESTYLES.join(", ")}`;
+  }
 
   if (Object.keys(errors).length > 0) {
     return { ok: false, errors };
@@ -59,6 +75,7 @@ export function parseProfileInput(body: unknown): ParseResult {
       age: age as number,
       sex: sex as SexValue,
       activityLevel: activityLevel as ActivityLevelValue | undefined,
+      lifestyle: lifestyle as LifestyleValue | undefined,
     },
   };
 }

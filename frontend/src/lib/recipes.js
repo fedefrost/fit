@@ -3,7 +3,14 @@ import DinnerDiningIcon from '@mui/icons-material/DinnerDining'
 import FreeBreakfastIcon from '@mui/icons-material/FreeBreakfast'
 import LunchDiningIcon from '@mui/icons-material/LunchDining'
 
-export const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack']
+export const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack', 'junk']
+
+/** Snacks y comida rápida: se registran, pero el generador nunca los propone. */
+export const isJunk = (recipe) => recipe.mealTypes.includes('junk')
+
+/** ¿Tiene algo que mostrar en "Ver receta"? (los snacks comprados listos no). */
+export const hasRecipeDetails = (recipe) =>
+  recipe.ingredients.length > 0 || Boolean(recipe.summaryEs || recipe.summaryEn)
 
 export const SLOT_ICONS = {
   breakfast: FreeBreakfastIcon,

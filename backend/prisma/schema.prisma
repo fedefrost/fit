@@ -13,7 +13,19 @@ enum Sex {
   other
 }
 
-// Nivel de actividad física; multiplica el gasto calórico basal (ver lib/nutrition.ts).
+// Rutina diaria (trabajo/estudio): define el gasto de un día normal sin contar el ejercicio
+// (ver lib/nutrition.ts).
+enum Lifestyle {
+  office // 8 h de trabajo mayormente sentado, con traslados
+  standing_work // 8 h de pie (comercio, atención al público, docencia...)
+  physical_work // 8 h de trabajo físico o forzado
+  remote_work // jornada completa desde casa
+  part_time // medio tiempo
+  student
+  unemployed // sin jornada laboral / en casa
+}
+
+// Nivel de actividad física (ejercicio); se suma al de la rutina diaria (ver lib/nutrition.ts).
 enum ActivityLevel {
   sedentary // poco o nada de ejercicio
   light // 1-3 días por semana
@@ -23,14 +35,15 @@ enum ActivityLevel {
 }
 
 model Profile {
-  id            Int           @id @default(autoincrement())
+  id            Int                @id @default(autoincrement())
   weight        Float // kg
   height        Float // cm
   age           Int // años
   sex           Sex
-  activityLevel ActivityLevel @default(sedentary)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  activityLevel ActivityLevel      @default(sedentary)
+  lifestyle     Lifestyle          @default(office)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
   foods         ProfileFood[]
   dietPlan      DietPlan?
   equipment     ProfileEquipment[]
@@ -96,7 +109,8 @@ enum MealType {
   breakfast
   lunch
   dinner
-  snack
+  snack // colación saludable
+  junk // snacks y comida rápida: se pueden registrar, pero nunca se recomiendan
 }
 
 enum RecipeUnit {

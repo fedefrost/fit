@@ -26,6 +26,7 @@ import MealCard from '../components/diet/MealCard'
 import NutrientProgress from '../components/diet/NutrientProgress'
 import RecipePickerDialog from '../components/diet/RecipePickerDialog'
 import { daySummary, useDiet } from '../context/DietContext'
+import { useWorkout, workoutDaySummary } from '../context/WorkoutContext'
 import { addDaysIso, capitalizeFirst, formatDay } from '../lib/dates'
 import { profileLabel } from '../lib/profile'
 import { formatLiters, formatNumber } from '../lib/recipes'
@@ -88,6 +89,7 @@ function DietContent({ label }) {
   const { t, i18n } = useTranslation()
   const language = i18n.resolvedLanguage
   const diet = useDiet()
+  const workout = useWorkout()
   const { status, error, reload, today, week } = diet
 
   const [selectedDate, setSelectedDate] = useState(null)
@@ -123,6 +125,13 @@ function DietContent({ label }) {
   const activeDate = selectedDate ?? (plan?.days.some((day) => day.date === today) ? today : week)
   const day = plan?.days.find((item) => item.date === activeDate)
   const summary = daySummary(day)
+  const junkCalories = (day?.meals ?? [])
+    .filter((meal) => meal.consumed && diet.recipesById.get(meal.recipeId)?.mealTypes.includes('junk'))
+    .reduce((total, meal) => total + meal.calories, 0)
+  // Gastadas del día = rutina diaria + ejercicio hecho ese día (de la rutina).
+  const workoutDay = workout.workout?.days.find((item) => item.date === activeDate)
+  const burnedToday = workout.workout ? workout.workout.baselineBurn + workoutDaySummary(workoutDay).burned : null
+  const balance = burnedToday === null ? 0 : summary.consumedCalories - burnedToday
   const dayName = formatDay(activeDate, language, { weekday: 'long' })
 
   const run = async (action, successMessage) => {
@@ -292,9 +301,41 @@ function DietContent({ label }) {
                     target: formatLiters(targets.waterMl, language),
                   })} L`}
                 />
-                <Typography variant="caption" color="text.secondary" sx={{ gridColumn: { md: '1 / -1' } }}>
-                  {t('diet.planned', { value: formatNumber(summary.plannedCalories, language, 0) })}
-                </Typography>
+                <Box sx={{ gridColumn: { md: '1 / -1' }, display: 'grid', gap: 0.5 }}>
+                  <Typography variant="caption" color="text.secondary">
+                    {t('diet.planned', { value: formatNumber(summary.plannedCalories, language, 0) })}
+                  </Typography>
+                  {junkCalories > 0 && (
+                    <Typography variant="body2" sx={{ color: 'warning.main', fontWeight: 700 }}>
+                      {t('diet.junkTotal', { value: formatNumber(junkCalories, language, 0) })}
+                    </Typography>
+                  )}
+                  {burnedToday !== null && (
+                    <Box sx={{ mt: 1 }}>
+                      <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                        <Typography variant="body2" sx={{ fontWeight: 800 }}>
+                          {t('diet.balanceTitle')}
+                        </Typography>
+                        <Chip
+                          size="small"
+                          color={balance <= 0 ? 'success' : 'warning'}
+                          variant="outlined"
+                          label={balance <= 0 ? t('diet.balanceDeficit') : t('diet.balanceSurplus')}
+                        />
+                      </Stack>
+                      <Typography variant="body2" color="text.secondary">
+                        {t('diet.balanceValue', {
+                          consumed: formatNumber(summary.consumedCalories, language, 0),
+                          burned: formatNumber(burnedToday, language, 0),
+                          balance: `${balance > 0 ? '+' : ''}${formatNumber(balance, language, 0)}`,
+                        })}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {t('diet.balanceHint')}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
               </CardContent>
             </Card>
 

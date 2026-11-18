@@ -20,13 +20,15 @@ import Typography from '@mui/material/Typography'
 import {
   ACTIVITY_LEVELS,
   DEFAULT_ACTIVITY_LEVEL,
+  DEFAULT_LIFESTYLE,
+  LIFESTYLES,
   PROFILE_FIELDS,
   SEX_OPTIONS,
   toInputValue,
   validateProfile,
 } from '../../lib/profile'
 
-const EMPTY = { weight: '', height: '', age: '', sex: '', activityLevel: DEFAULT_ACTIVITY_LEVEL }
+const EMPTY = { weight: '', height: '', age: '', sex: '', activityLevel: DEFAULT_ACTIVITY_LEVEL, lifestyle: DEFAULT_LIFESTYLE }
 
 function toFormValues(profile) {
   if (!profile) return EMPTY
@@ -36,6 +38,7 @@ function toFormValues(profile) {
     age: String(profile.age),
     sex: profile.sex,
     activityLevel: profile.activityLevel ?? DEFAULT_ACTIVITY_LEVEL,
+    lifestyle: profile.lifestyle ?? DEFAULT_LIFESTYLE,
   }
 }
 
@@ -150,6 +153,32 @@ export default function ProfileFormDialog({ open, profile, title, onClose, onSub
             </ToggleButtonGroup>
             <FormHelperText>{errors.sex ? t(errors.sex) : ' '}</FormHelperText>
           </FormControl>
+
+          <TextField
+            select
+            label={t('lifestyle.label')}
+            value={values.lifestyle}
+            onChange={(event) => setField('lifestyle', event.target.value)}
+            error={Boolean(errors.lifestyle)}
+            helperText={errors.lifestyle ? t(errors.lifestyle) : t('lifestyle.helper')}
+            required
+            fullWidth
+            slotProps={{
+              select: {
+                renderValue: (value) => t(`lifestyle.${value}.title`),
+                MenuProps: { slotProps: { paper: { sx: { borderRadius: 3 } } } },
+              },
+            }}
+          >
+            {LIFESTYLES.map((value) => (
+              <MenuItem key={value} value={value} sx={{ display: 'block', py: 1 }}>
+                <Typography sx={{ fontWeight: 700 }}>{t(`lifestyle.${value}.title`)}</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {t(`lifestyle.${value}.description`)}
+                </Typography>
+              </MenuItem>
+            ))}
+          </TextField>
 
           <TextField
             select

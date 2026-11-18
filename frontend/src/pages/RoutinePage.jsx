@@ -352,7 +352,14 @@ function RoutineContent({ profile, label }) {
                   <LocalFireDepartmentIcon color="warning" />
                   <Box>
                     <Typography variant="body2" sx={{ fontWeight: 800 }}>
-                      {t('routine.burned')}: {t('routine.burnedValue', { value: formatNumber(summary.burned, language, 0) })}
+                      {t('routine.dayBurnTitle')}
+                    </Typography>
+                    <Typography variant="body2">
+                      {t('routine.dayBurnValue', {
+                        base: formatNumber(workout.baselineBurn, language, 0),
+                        exercise: formatNumber(summary.burned, language, 0),
+                        total: formatNumber(workout.baselineBurn + summary.burned, language, 0),
+                      })}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
                       {t('routine.planned', { value: formatNumber(summary.planned, language, 0) })}

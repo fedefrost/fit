@@ -36,7 +36,7 @@ export default function DietSummaryBar() {
   const { t, i18n } = useTranslation()
   const language = i18n.resolvedLanguage
   const { todaySummary, status } = useDiet()
-  const { todayBurned, status: workoutStatus } = useWorkout()
+  const { todayBurned, workout, status: workoutStatus } = useWorkout()
   const dietReady = status === 'ready' && todaySummary
   const workoutReady = workoutStatus === 'ready' && todayBurned !== null
   if (!dietReady && !workoutReady) return null
@@ -80,7 +80,11 @@ export default function DietSummaryBar() {
     )
   }
 
-  const burned = workoutReady ? formatNumber(todayBurned, language, 0) : null
+  // Gasto de hoy = rutina diaria (sin ejercicio) + ejercicio hecho.
+  const burned = workoutReady ? formatNumber(workout.baselineBurn + todayBurned, language, 0) : null
+  const burnedParts = workoutReady
+    ? { base: formatNumber(workout.baselineBurn, language, 0), exercise: formatNumber(todayBurned, language, 0) }
+    : null
 
   return (
     <Box sx={{ borderTop: 1, borderColor: 'divider' }}>
@@ -91,7 +95,7 @@ export default function DietSummaryBar() {
           </Typography>
           {dietLink}
           {burned !== null && (
-            <ButtonBase component={RouterLink} to="/routine" aria-label={t('summaryBar.burnedAria', { value: burned })} sx={linkSx}>
+            <ButtonBase component={RouterLink} to="/routine" aria-label={t('summaryBar.burnedAria', { value: burned, ...burnedParts })} sx={linkSx}>
               <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
                 <Box sx={{ display: 'flex', color: 'warning.main' }}>
                   <DirectionsRunIcon fontSize="small" />

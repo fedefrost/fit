@@ -24,7 +24,9 @@ El backend aplica las migraciones de Prisma automáticamente al arrancar.
 
 Campos: `weight` (kg), `height` (cm), `age` (años), `sex` (`male` | `female` | `other`) y
 `activityLevel` (`sedentary` | `light` | `moderate` | `active` | `very_active`; opcional: al crear
-vale `sedentary` y al editar sin enviarlo no cambia).
+vale `sedentary` y al editar sin enviarlo no cambia) y `lifestyle` (`office` | `standing_work` |
+`physical_work` | `remote_work` | `part_time` | `student` | `unemployed`; opcional, igual que
+`activityLevel`, por defecto `office`).
 
 | Método | Ruta                | Descripción        |
 |--------|---------------------|--------------------|
@@ -70,15 +72,28 @@ Al borrar un perfil se borran sus preferencias.
 Cada perfil tiene como máximo **una dieta: la de la semana en curso** (lunes a domingo). Al generar
 la de otra semana se borra la anterior: no se guarda historial.
 
-**Recetas.** Catálogo de solo lectura (~120 recetas en español e inglés) cargado con las migraciones
-`20261116000100_recipe_catalog` y `20261117000000_more_recipes`, igual que los alimentos. Cada receta tiene ingredientes con cantidad
-por porción, kcal por porción, el agua que aporta (`waterMl`) y en qué comidas sirve
-(`breakfast`, `lunch`, `dinner`, `snack`).
+**Recetas.** Catálogo de solo lectura (332 recetas en español e inglés) cargado con las migraciones
+`20261116000100_recipe_catalog`, `20261117000000_more_recipes` y `20261118000100_recipes_by_protein`,
+igual que los alimentos. Cada receta tiene ingredientes con cantidad por porción, kcal por porción,
+el agua que aporta (`waterMl`) y en qué comidas sirve (`breakfast`, `lunch`, `dinner`, `snack`, `junk`).
+La última migración se genera con `python tools/catalog/recipes_v3.py` (datos en
+`tools/catalog/recipes_v3_*.py`): 20 recetas por proteína principal (pollo, carne vacuna, cerdo,
+pescados y mariscos, huevos, legumbres/proteína vegetal), 40 colaciones y 50 snacks.
 
-**Objetivos diarios** (`backend/lib/nutrition.ts`): gasto basal con Mifflin-St Jeor × factor de
-actividad; en adultos, −25 % con obesidad, −15 % con sobrepeso y +10 % con bajo peso; mínimo
-1200 kcal (1500 en hombres). Agua: 35 ml/kg + extra según actividad (entre 1,5 y 4,5 L). Es una
-estimación orientativa.
+**Snacks y comida rápida** (`junk`): 50 productos típicos sudamericanos (empanadas, choripán,
+alfajores, papas fritas, gaseosas, cerveza…) sin receta ni ingredientes, solo kcal y agua. Nunca
+los propone el generador; se añaden a mano para registrar lo consumido.
+
+**Rutina diaria** (`Profile.lifestyle`): `unemployed` y `remote_work` ×1,25, `office` ×1,3,
+`student` y `part_time` ×1,35, `standing_work` ×1,45, `physical_work` ×1,65 sobre el gasto basal.
+Ese es el gasto base del día (`baselineBurn`), al que se suma el ejercicio registrado; la barra
+superior y la dieta muestran consumidas − gastadas.
+
+**Objetivos diarios** (`backend/lib/nutrition.ts`): gasto basal con Mifflin-St Jeor × (factor de
+rutina diaria + incremento por actividad física: 0 / 0,1 / 0,2 / 0,35 / 0,5); en adultos, −25 % con
+obesidad, −15 % con sobrepeso y +10 % con bajo peso; mínimo 1200 kcal (1500 en hombres). Agua:
+35 ml/kg + extra según actividad y trabajo de pie/físico (entre 1,5 y 4,5 L). Es una estimación
+orientativa.
 
 **Generador** (`backend/lib/diet.ts`): para desayuno (25 %), almuerzo (40 %) y cena (35 %) descarta
 recetas con alimentos rechazados, prioriza las que tienen preferidos y las de calorías cercanas al
@@ -99,19 +114,25 @@ devuelven la dieta completa actualizada.
 
 ## Rutina
 
-**Equipamiento.** Catálogo de solo lectura (`equipment`: mancuernas, barra con discos, banco,
-bicicleta fija y barra de dominadas). Cada perfil indica qué tiene en casa y en el gimnasio; un
-mismo equipo puede estar en los dos.
+**Equipamiento.** Catálogo de solo lectura (`equipment`, 15): mancuernas, barra con discos, banco,
+bicicleta fija, barra de dominadas, pesa rusa, banda elástica, polea, cinta de correr, elíptica,
+remo, prensa de piernas, soga, pelota de estabilidad y balón medicinal. Cada perfil indica qué
+tiene en casa y en el gimnasio; un mismo equipo puede estar en los dos.
 
-**Ejercicios.** Catálogo de solo lectura (45 ejercicios es/en, migración
-`20261117000200_exercise_catalog`): 5 por músculo (piernas, bíceps, tríceps, glúteos, pecho,
-espalda, abdomen y hombros) y 5 generales de cardio/movilidad que se usan como calentamiento.
+**Ejercicios.** Catálogo de solo lectura (320 ejercicios es/en, migraciones
+`20261117000200_exercise_catalog` y `20261118000200_exercise_catalog_v2`): 20 por equipo
+(contando el equipo principal) más 20 de peso corporal, repartidos entre piernas, bíceps, tríceps,
+glúteos, pecho, espalda, abdomen, hombros y generales de cardio/movilidad. Algunos usan más de un
+equipo (p. ej. press con mancuernas + banco), por eso el banco aparece en más de 20.
+La migración v2 se genera con `python tools/exercise-animations/catalog_v2.py` (datos en
+`catalog_v2_a..d.py`, animaciones con las plantillas de `templates.py`).
 Cada uno tiene su tipo de medida (`time` minutos, `reps` series × reps, `reps_weight` + kg), su
 MET, el equipamiento que requiere y si es de alto impacto.
 
 Las animaciones (stickman blanco sobre fondo azul) están en `frontend/public/exercises/<slug>.png`
 (miniatura) y `.gif` (animación). Se generan con `tools/exercise-animations/generate.py`
-(requiere `pip install pillow`); el script falla si falta la animación de algún ejercicio del catálogo.
+(requiere `pip install pillow`; `python generate.py <slug> ...` regenera solo esos); el script
+falla si falta la animación de algún ejercicio del catálogo. El motor del esqueleto está en `skeleton.py`.
 
 **Personalización** (`backend/lib/exercise.ts`):
 - Nivel físico (principiante / intermedio / avanzado) según actividad, IMC y edad.

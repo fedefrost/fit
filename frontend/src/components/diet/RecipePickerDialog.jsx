@@ -30,6 +30,7 @@ import { useDiet } from '../../context/DietContext'
 import { foodName, sortFoods } from '../../lib/foods'
 import {
   formatNumber,
+  hasRecipeDetails,
   MEAL_TYPES,
   normalizeText,
   omittedIngredients,
@@ -40,12 +41,14 @@ import {
   servingsToInput,
   SERVINGS_RANGE,
 } from '../../lib/recipes'
+import RecipeDetails from './RecipeDetails'
 
 const foodFilter = createFilterOptions({ stringify: (food) => `${food.nameEs} ${food.nameEn}`, ignoreAccents: true })
 
 /**
  * Elegir una receta del catálogo para cambiar una comida (`mode="swap"`) o añadir una extra
- * (`mode="add"`). Filtros: texto (nombre en es/en), tipo de comida e ingredientes (las recetas
+ * (`mode="add"`). Con `mode="view"` solo se consulta: al elegir una receta se ven sus ingredientes,
+ * preparación, calorías e hidratación, sin registrar nada (no usa `onConfirm`). Filtros: texto (nombre en es/en), tipo de comida e ingredientes (las recetas
  * deben contener todos los elegidos). Por defecto oculta las que tienen alimentos rechazados.
  */
 export default function RecipePickerDialog({ open, mode, slot, initialMealType, initialServings = 1, onClose, onConfirm }) {
@@ -63,9 +66,12 @@ export default function RecipePickerDialog({ open, mode, slot, initialMealType, 
   const [servingsText, setServingsText] = useState('1') // lo que escribe el usuario; admite decimales
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [showDetail, setShowDetail] = useState(false) // solo en mode="view"
+  const viewOnly = mode === 'view'
 
   useEffect(() => {
     if (open) {
+      setShowDetail(false)
       setQuery('')
       setMealType(initialMealType ?? 'all')
       setIngredients([])
@@ -116,16 +122,23 @@ export default function RecipePickerDialog({ open, mode, slot, initialMealType, 
     if (!saving) onClose()
   }
 
-  const title = mode === 'swap' ? t('picker.swapTitle', { slot: t(`diet.slots.${slot}`).toLowerCase() }) : t('picker.addTitle')
+  const title =
+    mode === 'swap'
+      ? t('picker.swapTitle', { slot: t(`diet.slots.${slot}`).toLowerCase() })
+      : viewOnly
+        ? t('picker.viewTitle')
+        : t('picker.addTitle')
+  const hint = mode === 'swap' ? t('picker.swapHint') : viewOnly ? t('picker.viewHint') : t('picker.addHint')
+  const detail = viewOnly && showDetail && selected ? selected : null
 
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md" fullScreen={fullScreen} scroll="paper">
       <DialogTitle sx={{ fontWeight: 800, pb: 0.5 }}>{title}</DialogTitle>
       <Typography color="text.secondary" variant="body2" sx={{ px: 3, pb: 2 }}>
-        {mode === 'swap' ? t('picker.swapHint') : t('picker.addHint')}
+        {hint}
       </Typography>
 
-      <Box sx={{ px: 3, pb: 2, display: 'grid', gap: 1.5 }}>
+      <Box sx={{ px: 3, pb: 2, display: detail ? 'none' : 'grid', gap: 1.5 }}>
         <TextField
           value={query}
           onChange={(event) => setQuery(event.target.value)}
@@ -192,7 +205,40 @@ export default function RecipePickerDialog({ open, mode, slot, initialMealType, 
         </Stack>
       </Box>
 
-      <DialogContent dividers sx={{ p: 0 }}>
+      {detail && (
+        <DialogContent dividers>
+          <Typography variant="h6" component="h3" sx={{ fontWeight: 800 }}>
+            {recipeName(detail, language)}
+          </Typography>
+          <Stack direction="row" useFlexGap spacing={1} sx={{ flexWrap: 'wrap', alignItems: 'center', mt: 1, mb: 2.5 }}>
+            {detail.mealTypes.map((type) => (
+              <Chip key={type} size="small" label={t(`picker.mealTypes.${type}`)} />
+            ))}
+            <Chip
+              size="small"
+              color="warning"
+              variant="outlined"
+              label={t('picker.perServing', { kcal: formatNumber(detail.calories, language, 0) })}
+            />
+            <Chip
+              size="small"
+              color="primary"
+              variant="outlined"
+              icon={<WaterDropIcon />}
+              label={t('picker.waterPerServing', { value: formatNumber(detail.waterMl, language, 0) })}
+            />
+          </Stack>
+          {hasRecipeDetails(detail) ? (
+            <RecipeDetails recipe={detail} servings={servings ?? 1} />
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              {t('diet.noRecipe')}
+            </Typography>
+          )}
+        </DialogContent>
+      )}
+
+      <DialogContent dividers sx={{ p: 0, display: detail ? 'none' : undefined }}>
         <Typography variant="caption" color="text.secondary" component="p" sx={{ px: 3, pt: 1.5 }} aria-live="polite">
           {t('picker.count', { count: results.length })}
         </Typography>
@@ -208,7 +254,10 @@ export default function RecipePickerDialog({ open, mode, slot, initialMealType, 
                 <ListItemButton
                   key={recipe.id}
                   selected={isSelected}
-                  onClick={() => setSelectedId(recipe.id)}
+                  onClick={() => {
+                    setSelectedId(recipe.id)
+                    if (viewOnly) setShowDetail(true)
+                  }}
                   aria-pressed={isSelected}
                   sx={{ borderRadius: 3, mb: 0.5, alignItems: 'flex-start', gap: 1.5 }}
                 >
@@ -284,14 +333,34 @@ export default function RecipePickerDialog({ open, mode, slot, initialMealType, 
         <Typography variant="body2" sx={{ fontWeight: 700, flexGrow: 1, alignSelf: 'center' }}>
           {selected &&
             servings !== null &&
-            t('picker.total', { kcal: formatNumber(Math.round(selected.calories * servings), language, 0) })}
+            (viewOnly
+              ? t('picker.totalWithWater', {
+                  kcal: formatNumber(Math.round(selected.calories * servings), language, 0),
+                  water: formatNumber(Math.round(selected.waterMl * servings), language, 0),
+                })
+              : t('picker.total', { kcal: formatNumber(Math.round(selected.calories * servings), language, 0) }))}
         </Typography>
-        <Button onClick={handleClose} disabled={saving} color="inherit">
-          {t('common.cancel')}
-        </Button>
-        <Button onClick={handleConfirm} variant="contained" disabled={!selected || servings === null} loading={saving}>
-          {mode === 'swap' ? t('picker.confirmSwap') : t('picker.confirmAdd')}
-        </Button>
+        {viewOnly ? (
+          <>
+            {detail && (
+              <Button onClick={() => setShowDetail(false)} color="inherit">
+                {t('picker.backToList')}
+              </Button>
+            )}
+            <Button onClick={handleClose} variant="contained">
+              {t('picker.close')}
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button onClick={handleClose} disabled={saving} color="inherit">
+              {t('common.cancel')}
+            </Button>
+            <Button onClick={handleConfirm} variant="contained" disabled={!selected || servings === null} loading={saving}>
+              {mode === 'swap' ? t('picker.confirmSwap') : t('picker.confirmAdd')}
+            </Button>
+          </>
+        )}
       </DialogActions>
     </Dialog>
   )

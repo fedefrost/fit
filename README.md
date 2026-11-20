@@ -94,6 +94,9 @@ lista de compras no lo incluye. Si rechaza uno clave, la receta no se propone. L
 `20261120000000_optional_ingredients` marcó el catálogo existente con esas reglas; las recetas
 nuevas lo indican con `?` en sus datos (`"cumin:p?"`).
 
+**Verificar receta**: botón de la dieta para consultar cualquier receta del catálogo (ingredientes
+escalados a las porciones, preparación, kcal e hidratación) sin registrarla como consumida.
+
 **Snacks y comida rápida** (`junk`): 50 productos típicos sudamericanos (empanadas, choripán,
 alfajores, papas fritas, gaseosas, cerveza…) sin receta ni ingredientes, solo kcal y agua. Nunca
 los propone el generador; se añaden a mano para registrar lo consumido.

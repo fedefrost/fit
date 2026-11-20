@@ -15,6 +15,7 @@ import Typography from '@mui/material/Typography'
 import AddIcon from '@mui/icons-material/Add'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import AutorenewIcon from '@mui/icons-material/Autorenew'
+import MenuBookIcon from '@mui/icons-material/MenuBook'
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment'
 import RestaurantIcon from '@mui/icons-material/Restaurant'
 import WaterDropIcon from '@mui/icons-material/WaterDrop'
@@ -204,17 +205,22 @@ function DietContent({ label }) {
             })}
           </Typography>
         </Box>
-        {plan && (
-          <Button
-            variant="outlined"
-            startIcon={<AutorenewIcon />}
-            onClick={() => setConfirm({ open: true, kind: 'week', date: null })}
-            disabled={busy}
-            sx={{ alignSelf: { xs: 'flex-start', sm: 'auto' } }}
-          >
-            {t('diet.regenerateWeek')}
+        <Stack direction="row" useFlexGap spacing={1} sx={{ flexWrap: 'wrap', alignSelf: { xs: 'flex-start', sm: 'auto' } }}>
+          {/* Consultar cualquier receta sin registrarla como consumida. */}
+          <Button variant="outlined" startIcon={<MenuBookIcon />} onClick={() => setPicker({ open: true, mode: 'view', meal: null })}>
+            {t('diet.checkRecipe')}
           </Button>
-        )}
+          {plan && (
+            <Button
+              variant="outlined"
+              startIcon={<AutorenewIcon />}
+              onClick={() => setConfirm({ open: true, kind: 'week', date: null })}
+              disabled={busy}
+            >
+              {t('diet.regenerateWeek')}
+            </Button>
+          )}
+        </Stack>
       </Stack>
 
       <TargetsCard targets={targets} />
@@ -405,7 +411,7 @@ function DietContent({ label }) {
         open={picker.open}
         mode={picker.mode}
         slot={picker.meal?.slot ?? 'extra'}
-        initialMealType={SLOT_MEAL_TYPE[picker.meal?.slot ?? 'extra']}
+        initialMealType={picker.mode === 'view' ? 'all' : SLOT_MEAL_TYPE[picker.meal?.slot ?? 'extra']}
         onClose={() => setPicker((current) => ({ ...current, open: false }))}
         onConfirm={handlePickerConfirm}
       />

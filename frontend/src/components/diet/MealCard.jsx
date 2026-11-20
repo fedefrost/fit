@@ -22,17 +22,16 @@ import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import WaterDropIcon from '@mui/icons-material/WaterDrop'
 import { useDiet } from '../../context/DietContext'
+import RecipeDetails from './RecipeDetails'
 import { foodName } from '../../lib/foods'
 import {
   formatNumber,
-  formatQuantity,
   hasRecipeDetails,
   isJunk,
   omittedIngredients,
   recipeBlockedBy,
   recipeContains,
   recipeName,
-  recipeSummary,
   SLOT_ICONS,
 } from '../../lib/recipes'
 
@@ -192,55 +191,7 @@ export default function MealCard({ meal, busy, onToggleConsumed, onSwap, onRemov
       </Stack>
 
       <Collapse in={open} id={detailsId} unmountOnExit>
-        <Box sx={{ px: { xs: 2, sm: 2.5 }, pb: 2.5, display: 'grid', gap: 2, gridTemplateColumns: { md: '1fr 1.4fr' } }}>
-          <Box>
-            <Typography variant="subtitle2" component="h4" sx={{ fontWeight: 800, mb: 1 }}>
-              {t('diet.ingredients')}
-            </Typography>
-            <Box component="ul" sx={{ m: 0, pl: 2.5, display: 'grid', gap: 0.5 }}>
-              {recipe.ingredients.map((ingredient) => {
-                const food = foodsById.get(ingredient.foodId)
-                const rejected = preferences.rejected.has(ingredient.foodId)
-                const skipped = rejected && ingredient.optional
-                return (
-                  <Typography
-                    component="li"
-                    variant="body2"
-                    key={ingredient.foodId}
-                    sx={skipped ? { color: 'text.disabled' } : rejected ? { color: 'error.main' } : undefined}
-                  >
-                    <Box component="span" sx={skipped ? { textDecoration: 'line-through' } : undefined}>
-                      {food ? foodName(food, language) : '—'}
-                      <Typography component="span" variant="body2" color="text.secondary">
-                        {' · '}
-                        {formatQuantity(ingredient, meal.servings, t, language)}
-                      </Typography>
-                    </Box>
-                    {ingredient.optional && (
-                      <Typography component="span" variant="caption" color={skipped ? 'text.disabled' : 'text.secondary'}>
-                        {' '}
-                        {skipped ? t('diet.omitted') : t('diet.optional')}
-                      </Typography>
-                    )}
-                  </Typography>
-                )
-              })}
-            </Box>
-            {recipe.ingredients.some((ingredient) => ingredient.optional) && (
-              <Typography variant="caption" color="text.secondary" component="p" sx={{ mt: 1 }}>
-                {t('diet.optionalHint')}
-              </Typography>
-            )}
-          </Box>
-          <Box>
-            <Typography variant="subtitle2" component="h4" sx={{ fontWeight: 800, mb: 1 }}>
-              {t('diet.preparation')}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {recipeSummary(recipe, language)}
-            </Typography>
-          </Box>
-        </Box>
+        <RecipeDetails recipe={recipe} servings={meal.servings} sx={{ px: { xs: 2, sm: 2.5 }, pb: 2.5 }} />
       </Collapse>
     </Card>
   )

@@ -5,9 +5,9 @@ import Typography from '@mui/material/Typography'
 
 /**
  * Barra "consumido de objetivo" con icono y textos ya formateados.
- * Pasado el 110 % del objetivo se pinta de naranja como aviso.
+ * Pasado el 110 % del objetivo se pinta de naranja como aviso; con `alert` se pinta de rojo.
  */
-export default function NutrientProgress({ icon, label, valueText, consumed, target, color }) {
+export default function NutrientProgress({ icon, label, valueText, consumed, target, color, alert = false }) {
   const ratio = target > 0 ? consumed / target : 0
   return (
     <Box sx={{ minWidth: 0 }}>
@@ -16,14 +16,14 @@ export default function NutrientProgress({ icon, label, valueText, consumed, tar
         <Typography variant="body2" sx={{ fontWeight: 700 }}>
           {label}
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto !important', fontWeight: 700 }}>
+        <Typography variant="body2" color={alert ? 'error.main' : 'text.secondary'} sx={{ ml: 'auto !important', fontWeight: 700 }}>
           {valueText}
         </Typography>
       </Stack>
       <LinearProgress
         variant="determinate"
         value={Math.min(100, ratio * 100)}
-        color={ratio > 1.1 ? 'warning' : color}
+        color={alert ? 'error' : ratio > 1.1 ? 'warning' : color}
         aria-label={`${label}: ${valueText}`}
         sx={{ height: 10, borderRadius: 5 }}
       />

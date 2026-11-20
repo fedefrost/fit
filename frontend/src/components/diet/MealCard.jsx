@@ -16,6 +16,7 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import FastfoodIcon from '@mui/icons-material/Fastfood'
 import FavoriteIcon from '@mui/icons-material/Favorite'
+import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline'
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment'
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
@@ -27,6 +28,8 @@ import {
   formatQuantity,
   hasRecipeDetails,
   isJunk,
+  omittedIngredients,
+  recipeBlockedBy,
   recipeContains,
   recipeName,
   recipeSummary,
@@ -47,7 +50,12 @@ export default function MealCard({ meal, busy, onToggleConsumed, onSwap, onRemov
   const SlotIcon = SLOT_ICONS[meal.slot]
   const isExtra = meal.slot === 'extra'
   const hasPreferred = recipeContains(recipe, preferences.preferred)
-  const hasRejected = recipeContains(recipe, preferences.rejected)
+  const hasRejected = recipeBlockedBy(recipe, preferences.rejected)
+  const omitted = omittedIngredients(recipe, preferences.rejected)
+  const omittedNames = omitted.map((ingredient) => {
+    const food = foodsById.get(ingredient.foodId)
+    return food ? foodName(food, language).toLowerCase() : '—'
+  })
   const detailsId = `meal-${meal.id}-details`
 
   return (
@@ -111,6 +119,14 @@ export default function MealCard({ meal, busy, onToggleConsumed, onSwap, onRemov
             )}
             {hasRejected && (
               <Chip size="small" icon={<WarningAmberIcon />} label={t('diet.includesRejected')} color="error" variant="outlined" />
+            )}
+            {omitted.length > 0 && (
+              <Chip
+                size="small"
+                icon={<RemoveCircleOutlineIcon />}
+                label={t('diet.without', { names: omittedNames.join(', ') })}
+                variant="outlined"
+              />
             )}
             {isJunk(recipe) && <Chip size="small" icon={<FastfoodIcon />} label={t('diet.junkChip')} color="warning" />}
           </Stack>
@@ -185,17 +201,36 @@ export default function MealCard({ meal, busy, onToggleConsumed, onSwap, onRemov
               {recipe.ingredients.map((ingredient) => {
                 const food = foodsById.get(ingredient.foodId)
                 const rejected = preferences.rejected.has(ingredient.foodId)
+                const skipped = rejected && ingredient.optional
                 return (
-                  <Typography component="li" variant="body2" key={ingredient.foodId} sx={rejected ? { color: 'error.main' } : undefined}>
-                    {food ? foodName(food, language) : '—'}
-                    <Typography component="span" variant="body2" color="text.secondary">
-                      {' · '}
-                      {formatQuantity(ingredient, meal.servings, t, language)}
-                    </Typography>
+                  <Typography
+                    component="li"
+                    variant="body2"
+                    key={ingredient.foodId}
+                    sx={skipped ? { color: 'text.disabled' } : rejected ? { color: 'error.main' } : undefined}
+                  >
+                    <Box component="span" sx={skipped ? { textDecoration: 'line-through' } : undefined}>
+                      {food ? foodName(food, language) : '—'}
+                      <Typography component="span" variant="body2" color="text.secondary">
+                        {' · '}
+                        {formatQuantity(ingredient, meal.servings, t, language)}
+                      </Typography>
+                    </Box>
+                    {ingredient.optional && (
+                      <Typography component="span" variant="caption" color={skipped ? 'text.disabled' : 'text.secondary'}>
+                        {' '}
+                        {skipped ? t('diet.omitted') : t('diet.optional')}
+                      </Typography>
+                    )}
                   </Typography>
                 )
               })}
             </Box>
+            {recipe.ingredients.some((ingredient) => ingredient.optional) && (
+              <Typography variant="caption" color="text.secondary" component="p" sx={{ mt: 1 }}>
+                {t('diet.optionalHint')}
+              </Typography>
+            )}
           </Box>
           <Box>
             <Typography variant="subtitle2" component="h4" sx={{ fontWeight: 800, mb: 1 }}>

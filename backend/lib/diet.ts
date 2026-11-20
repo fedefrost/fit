@@ -120,13 +120,15 @@ export type RecipeForGeneration = {
   mealTypes: MealType[];
   calories: number;
   ingredientIds: number[];
+  keyIngredientIds: number[]; // los no opcionales: si alguno está rechazado, la receta no sirve
 };
 
 type PlannedMeal = { date: Date; slot: GeneratedSlot; recipeId: number; servings: number };
 
 /**
  * Elige desayuno, almuerzo y cena para cada fecha. Función pura (sin base de datos).
- * - Descarta recetas con algún alimento rechazado.
+ * - Descarta recetas con algún ingrediente clave rechazado. Los opcionales rechazados no la
+ *   descartan (se hace sin ellos), pero restan puntos para preferir recetas completas.
  * - Puntaje: +2 por cada alimento preferido; penaliza recetas cuyas calorías estén lejos del
  *   objetivo de esa comida (necesitarían porciones muy grandes o muy chicas) y las que ya se
  *   usaron en la semana; nunca repite receta en el mismo día. Un poco de azar da variedad.
@@ -146,7 +148,7 @@ export function planMeals(params: {
   random?: () => number;
 }): PlannedMeal[] {
   const { recipes, preferredIds, rejectedIds, targets, dates, usage, avoid = new Set(), random = Math.random } = params;
-  const allowed = recipes.filter((recipe) => recipe.calories > 0 && !recipe.ingredientIds.some((id) => rejectedIds.has(id)));
+  const allowed = recipes.filter((recipe) => recipe.calories > 0 && !recipe.keyIngredientIds.some((id) => rejectedIds.has(id)));
   const planned: PlannedMeal[] = [];
 
   for (const date of dates) {
@@ -161,10 +163,11 @@ export function planMeals(params: {
       let bestScore = -Infinity;
       for (const recipe of candidates) {
         const preferred = recipe.ingredientIds.filter((id) => preferredIds.has(id)).length;
+        const omitted = recipe.ingredientIds.filter((id) => rejectedIds.has(id)).length;
         const calorieFit = Math.abs(Math.log(target / recipe.calories));
         const repeats = usage.get(recipe.id) ?? 0;
         const replaced = avoid.has(recipe.id) ? 6 : 0;
-        const score = preferred * 2 - calorieFit * 3 - repeats * 4 - replaced + random() * 1.5;
+        const score = preferred * 2 - omitted - calorieFit * 3 - repeats * 4 - replaced + random() * 1.5;
         if (score > bestScore) [best, bestScore] = [recipe, score];
       }
 
@@ -183,18 +186,20 @@ export function planMeals(params: {
 /**
  * Genera (o regenera) la dieta de la semana, o solo de `onlyDate`.
  * Reemplaza desayuno/almuerzo/cena de esas fechas; las comidas agregadas a mano se conservan.
- * Si el perfil tenía la dieta de otra semana, se borra (no se guarda historial).
  */
 export async function generateDiet(prisma: PrismaClient, profile: Profile, weekStart: Date, onlyDate?: Date) {
   const targets = dailyTargets(profile);
   const [recipes, preferences] = await Promise.all([
-    prisma.recipe.findMany({ select: { id: true, mealTypes: true, calories: true, ingredients: { select: { foodId: true } } } }),
+    prisma.recipe.findMany({
+      select: { id: true, mealTypes: true, calories: true, ingredients: { select: { foodId: true, optional: true } } },
+    }),
     prisma.profileFood.findMany({ where: { profileId: profile.id }, select: { foodId: true, preference: true } }),
   ]);
 
   const recipesForGeneration = recipes.map(({ ingredients, ...recipe }) => ({
     ...recipe,
     ingredientIds: ingredients.map((ingredient) => ingredient.foodId),
+    keyIngredientIds: ingredients.filter((ingredient) => !ingredient.optional).map((ingredient) => ingredient.foodId),
   }));
   const preferredIds = new Set(preferences.filter((p) => p.preference === "preferred").map((p) => p.foodId));
   const rejectedIds = new Set(preferences.filter((p) => p.preference === "rejected").map((p) => p.foodId));

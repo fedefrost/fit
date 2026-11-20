@@ -149,6 +149,7 @@ model RecipeIngredient {
   quantity Float // por porción, en `unit`
   unit     RecipeUnit
   position Int // orden en la lista
+  optional Boolean    @default(false) // no es clave: si falta o el perfil lo rechaza, la receta se hace sin él
   recipe   Recipe     @relation(fields: [recipeId], references: [id], onDelete: Cascade)
   food     Food       @relation(fields: [foodId], references: [id], onDelete: Restrict)
 

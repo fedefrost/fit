@@ -32,6 +32,8 @@ import {
   formatNumber,
   MEAL_TYPES,
   normalizeText,
+  omittedIngredients,
+  recipeBlockedBy,
   recipeContains,
   parseServingsInput,
   recipeName,
@@ -50,7 +52,7 @@ export default function RecipePickerDialog({ open, mode, slot, initialMealType, 
   const { t, i18n } = useTranslation()
   const language = i18n.resolvedLanguage
   const fullScreen = useMediaQuery((theme) => theme.breakpoints.down('sm'))
-  const { recipes, foods, preferences } = useDiet()
+  const { recipes, foods, foodsById, preferences } = useDiet()
 
   const [query, setQuery] = useState('')
   const [mealType, setMealType] = useState('all')
@@ -89,7 +91,7 @@ export default function RecipePickerDialog({ open, mode, slot, initialMealType, 
       .filter((recipe) => mealType === 'all' || recipe.mealTypes.includes(mealType))
       .filter((recipe) => !text || normalizeText(`${recipe.nameEs} ${recipe.nameEn}`).includes(text))
       .filter((recipe) => required.every((id) => recipe.ingredients.some((ingredient) => ingredient.foodId === id)))
-      .filter((recipe) => !hideRejected || !recipeContains(recipe, preferences.rejected))
+      .filter((recipe) => !hideRejected || !recipeBlockedBy(recipe, preferences.rejected))
       .filter((recipe) => !onlyPreferred || recipeContains(recipe, preferences.preferred))
       .sort((a, b) => recipeName(a, language).localeCompare(recipeName(b, language), language))
   }, [recipes, query, mealType, ingredients, hideRejected, onlyPreferred, preferences, language])
@@ -228,9 +230,23 @@ export default function RecipePickerDialog({ open, mode, slot, initialMealType, 
                         <Chip size="small" variant="outlined" color="success" icon={<FavoriteIcon />}
                           label={t('diet.includesPreferred')} />
                       )}
-                      {recipeContains(recipe, preferences.rejected) && (
+                      {recipeBlockedBy(recipe, preferences.rejected) && (
                         <Chip size="small" variant="outlined" color="error" icon={<WarningAmberIcon />}
                           label={t('diet.includesRejected')} />
+                      )}
+                      {omittedIngredients(recipe, preferences.rejected).length > 0 && (
+                        <Chip
+                          size="small"
+                          variant="outlined"
+                          label={t('diet.without', {
+                            names: omittedIngredients(recipe, preferences.rejected)
+                              .map((ingredient) => {
+                                const food = foodsById.get(ingredient.foodId)
+                                return food ? foodName(food, language).toLowerCase() : '—'
+                              })
+                              .join(', '),
+                          })}
+                        />
                       )}
                     </Stack>
                   </Box>

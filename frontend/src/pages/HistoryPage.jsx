@@ -16,6 +16,7 @@ import Typography from '@mui/material/Typography'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+import ErrorIcon from '@mui/icons-material/Error'
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter'
 import WaterDropIcon from '@mui/icons-material/WaterDrop'
 import { apiErrorMessage } from '../api/client'
@@ -24,6 +25,7 @@ import SelectedProfileGate from '../components/SelectedProfileGate'
 import HistoryDayDialog from '../components/history/HistoryDayDialog'
 import { useSelectedProfile } from '../context/SelectedProfileContext'
 import { addDaysIso, capitalizeFirst, formatDay, todayIso, toIsoDate } from '../lib/dates'
+import { dayAlerts } from '../lib/history'
 import { profileLabel } from '../lib/profile'
 import { formatLiters, formatNumber } from '../lib/recipes'
 
@@ -59,6 +61,7 @@ function DayCell({ date, data, isToday, isFuture, onOpen, language, t }) {
   const target = data?.targets?.calories ?? 0
   const ratio = target > 0 ? data.consumed.calories / target : 0
   const exercised = (data?.workout?.burned ?? 0) > 0
+  const hasAlerts = data ? dayAlerts(data, todayIso()).any : false
   const label = capitalizeFirst(formatDay(date, language, { weekday: 'long', day: 'numeric', month: 'long' }))
 
   const content = (
@@ -79,7 +82,10 @@ function DayCell({ date, data, isToday, isFuture, onOpen, language, t }) {
         >
           {dayNumber}
         </Box>
-        {exercised && <FitnessCenterIcon sx={{ fontSize: 16, color: 'warning.main' }} aria-hidden />}
+        <Stack direction="row" spacing={0.25} sx={{ alignItems: 'center' }}>
+          {exercised && <FitnessCenterIcon sx={{ fontSize: 16, color: 'warning.main' }} aria-hidden />}
+          {hasAlerts && <ErrorIcon sx={{ fontSize: 16, color: 'error.main' }} aria-hidden />}
+        </Stack>
       </Stack>
       {data && (
         <>
@@ -131,12 +137,12 @@ function DayCell({ date, data, isToday, isFuture, onOpen, language, t }) {
   return (
     <ButtonBase
       onClick={onOpen}
-      aria-label={t('history.cellAria', {
+      aria-label={`${t('history.cellAria', {
         day: label,
         consumed: data.consumed.calories,
         target: target || '—',
         water: formatLiters(data.consumed.waterMl, language),
-      })}
+      })}${hasAlerts ? ` (${t('history.cellAlert')})` : ''}`}
       sx={{
         ...cellSx,
         display: 'flex',

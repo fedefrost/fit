@@ -63,3 +63,13 @@ export function formatQuantity({ quantity, unit }, servings, t, language) {
 export function recipeContains(recipe, foodIds) {
   return recipe.ingredients.some((ingredient) => foodIds.has(ingredient.foodId))
 }
+
+/** ¿Tiene algún ingrediente clave (no opcional) rechazado? Entonces la receta no sirve para el perfil. */
+export function recipeBlockedBy(recipe, rejectedIds) {
+  return recipe.ingredients.some((ingredient) => !ingredient.optional && rejectedIds.has(ingredient.foodId))
+}
+
+/** Ingredientes opcionales rechazados: la receta se hace sin ellos. */
+export function omittedIngredients(recipe, rejectedIds) {
+  return recipe.ingredients.filter((ingredient) => ingredient.optional && rejectedIds.has(ingredient.foodId))
+}

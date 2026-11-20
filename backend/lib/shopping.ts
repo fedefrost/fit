@@ -51,7 +51,8 @@ export async function ensureList(prisma: PrismaClient, profileId: number, weekSt
 /**
  * { weekStart, people, days, hasDiet, ingredients, items }
  * - ingredients: suma de los ingredientes de desayuno, almuerzo y cena del plan en los días
- *   elegidos, × porciones × personas. Las comidas agregadas a mano no cuentan (ya se comieron).
+ *   elegidos, × porciones × personas. Las comidas agregadas a mano no cuentan (ya se comieron)
+ *   y los ingredientes opcionales que el perfil rechaza tampoco (la receta se hace sin ellos).
  * - items: lo agregado a mano.
  */
 export async function buildShoppingResponse(prisma: PrismaClient, profile: Profile, weekStart: Date) {
@@ -69,6 +70,11 @@ export async function buildShoppingResponse(prisma: PrismaClient, profile: Profi
     where: { profileId_weekStart: { profileId: profile.id, weekStart } },
   });
   const hasDiet = Boolean(plan);
+  const rejected = new Set(
+    (await prisma.profileFood.findMany({ where: { profileId: profile.id, preference: "rejected" }, select: { foodId: true } })).map(
+      (row) => row.foodId,
+    ),
+  );
 
   const ingredients = new Map<string, { key: string; foodId: number; unit: RecipeUnit; quantity: number; meals: number }>();
   if (plan && hasDiet) {
@@ -79,6 +85,7 @@ export async function buildShoppingResponse(prisma: PrismaClient, profile: Profi
     });
     for (const meal of meals) {
       for (const ingredient of meal.recipe.ingredients) {
+        if (ingredient.optional && rejected.has(ingredient.foodId)) continue;
         const key = ingredientKey(ingredient.foodId, ingredient.unit);
         const entry = ingredients.get(key) ?? { key, foodId: ingredient.foodId, unit: ingredient.unit, quantity: 0, meals: 0 };
         entry.quantity += ingredient.quantity * meal.servings * people;

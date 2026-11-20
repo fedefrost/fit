@@ -52,8 +52,10 @@ curl -X POST http://localhost:3000/api/profiles \
 
 ## Alimentos
 
-El catálogo de ingredientes (tabla `foods`, ~280 alimentos con nombre en español e inglés) se
-carga con la migración `20261113000100_food_catalog` y la app solo lo lee: no hay endpoints para
+El catálogo de ingredientes (tabla `foods`, 340 alimentos con nombre en español e inglés) se
+carga con las migraciones `20261113000100_food_catalog` y `20261120000100_american_catalog`
+(alimentos típicos de América: zapallito verde, palmitos, plátano macho, maíz pisado, cortes
+argentinos, pescados de río…) y la app solo lo lee: no hay endpoints para
 editarlo. Para corregir o sumar alimentos, crear otra migración con el mismo formato
 (`INSERT ... ON CONFLICT ("slug") DO UPDATE`); los ids no cambian y las preferencias se conservan.
 
@@ -73,13 +75,24 @@ Cada perfil tiene **una dieta por semana** (lunes a domingo). La app edita solo 
 curso; las anteriores se conservan para el historial, junto con los objetivos recomendados
 (kcal, agua y gasto base) copiados al generarla y al consultarla.
 
-**Recetas.** Catálogo de solo lectura (332 recetas en español e inglés) cargado con las migraciones
-`20261116000100_recipe_catalog`, `20261117000000_more_recipes` y `20261118000100_recipes_by_protein`,
+**Recetas.** Catálogo de solo lectura (404 recetas en español e inglés) cargado con las migraciones
+`20261116000100_recipe_catalog`, `20261117000000_more_recipes`, `20261118000100_recipes_by_protein`
+y `20261120000100_american_catalog`,
 igual que los alimentos. Cada receta tiene ingredientes con cantidad por porción, kcal por porción,
 el agua que aporta (`waterMl`) y en qué comidas sirve (`breakfast`, `lunch`, `dinner`, `snack`, `junk`).
 La última migración se genera con `python tools/catalog/recipes_v3.py` (datos en
 `tools/catalog/recipes_v3_*.py`): 20 recetas por proteína principal (pollo, carne vacuna, cerdo,
 pescados y mariscos, huevos, legumbres/proteína vegetal), 40 colaciones y 50 snacks.
+El catálogo americano (72 recetas: locro, humita, arepas, causa, pozole, tarta de zapallitos…) se
+genera con `python tools/catalog/american_v1.py` (datos en `tools/catalog/american_v1_data.py`).
+
+**Ingredientes opcionales** (`RecipeIngredient.optional`): los que no son clave (especias,
+condimentos, un poco de aceite o endulzante, toppings y las verduras o frutas que no son la
+principal). Si el perfil rechaza un ingrediente opcional, la receta se hace sin él: el generador
+la puede proponer (con menos puntaje que una completa), la receta lo muestra como omitido y la
+lista de compras no lo incluye. Si rechaza uno clave, la receta no se propone. La migración
+`20261120000000_optional_ingredients` marcó el catálogo existente con esas reglas; las recetas
+nuevas lo indican con `?` en sus datos (`"cumin:p?"`).
 
 **Snacks y comida rápida** (`junk`): 50 productos típicos sudamericanos (empanadas, choripán,
 alfajores, papas fritas, gaseosas, cerveza…) sin receta ni ingredientes, solo kcal y agua. Nunca
@@ -172,6 +185,10 @@ Se puede cambiar de mes y año (hasta el mes actual).
 `{ month, days: [{ date, targets, consumed: { calories, waterMl }, plannedCalories, meals, workout, baselineBurn }] }`.
 `targets` es lo recomendado esa semana (para dietas anteriores a este cambio, sin copia, se usa el
 perfil actual). Las calorías de los ejercicios se estiman con los datos actuales del perfil.
+
+**Alertas** (en rojo, `frontend/src/lib/history.js`): más calorías que las recomendadas, menos agua
+que la recomendada y ejercicios planificados sin hacer. Calorías y agua solo se evalúan en días con
+comidas registradas; agua y ejercicios, solo en días ya terminados (hoy todavía puede cambiar).
 
 ## Lista de compras
 
